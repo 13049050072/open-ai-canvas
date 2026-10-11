@@ -383,16 +383,16 @@ async function buildGenerationTaskNodeResults(node: CanvasNodeData, task: Genera
         const id = `${node.id}:task:${task.id}:image:${index}`;
         const existing = nodes.find((item) => item.id === id);
         const child = await buildGenerationTaskNodeResult(
-            existing
-                ? { ...node, ...existing, id, title: existing.title, position: existing.position, width: existing.width, height: existing.height }
-                : { ...node, id, title: `${node.title} · ${index + 1}`, parentId: undefined },
+            existing ? { ...node, ...existing, id, title: existing.title, position: existing.position, width: existing.width, height: existing.height } : { ...node, id, title: `${node.title} · ${index + 1}`, parentId: undefined },
             task,
             nodes,
             index,
         );
         children.push({
             ...child,
-            ...(existing ? { title: existing.title, position: existing.position, width: existing.metadata?.manualSize ? existing.width : child.width, height: existing.metadata?.manualSize ? existing.height : child.height } : { position: imageGenerationChildPosition(resultNode.position, resultNode.width, child, index) }),
+            ...(existing
+                ? { title: existing.title, position: existing.position, width: existing.metadata?.manualSize ? existing.width : child.width, height: existing.metadata?.manualSize ? existing.height : child.height }
+                : { position: imageGenerationChildPosition(resultNode.position, resultNode.width, child, index) }),
             metadata: {
                 ...child.metadata,
                 assetId: task.outputs?.find((output) => output.outputIndex === index)?.materializedAssetId,

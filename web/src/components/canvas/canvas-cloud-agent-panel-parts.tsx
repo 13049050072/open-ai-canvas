@@ -571,7 +571,11 @@ export function ApprovalCard({
                     无法确认具体目标，继续前请重新读取画布。
                 </div>
             )}
-            {imageApproval ? <CanvasAgentImageApprovalSettings initial={imageApproval} value={mediaSettings} onChange={setMediaSettings} theme={theme} disabled={submitting} /> : videoApproval ? <CanvasAgentVideoApprovalSettings initial={videoApproval} value={mediaSettings} onChange={setMediaSettings} theme={theme} disabled={submitting} /> : null}
+            {imageApproval ? (
+                <CanvasAgentImageApprovalSettings initial={imageApproval} value={mediaSettings} onChange={setMediaSettings} theme={theme} disabled={submitting} />
+            ) : videoApproval ? (
+                <CanvasAgentVideoApprovalSettings initial={videoApproval} value={mediaSettings} onChange={setMediaSettings} theme={theme} disabled={submitting} />
+            ) : null}
             <button type="button" className="canvas-agent-approval-reason-toggle" aria-expanded={showReason} onClick={() => setShowReason((value) => !value)} disabled={submitting}>
                 {showReason ? "收起拒绝理由" : "填写拒绝理由（可选）"}
             </button>

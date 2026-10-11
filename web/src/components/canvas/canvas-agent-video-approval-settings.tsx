@@ -8,13 +8,7 @@ import { resolveCompatibleModel, type ModelRequirements } from "@/lib/model-sele
 import type { AgentMediaSettings } from "@/services/api/agent";
 import { PUBLIC_MODEL_CATALOG_ID, useEffectiveConfig } from "@/stores/use-config-store";
 
-export function CanvasAgentVideoApprovalSettings({ initial, value, theme, disabled, onChange }: {
-    initial: AgentVideoApproval;
-    value?: AgentMediaSettings;
-    theme: CanvasTheme;
-    disabled: boolean;
-    onChange: (value: AgentMediaSettings) => void;
-}) {
+export function CanvasAgentVideoApprovalSettings({ initial, value, theme, disabled, onChange }: { initial: AgentVideoApproval; value?: AgentMediaSettings; theme: CanvasTheme; disabled: boolean; onChange: (value: AgentMediaSettings) => void }) {
     const effective = useEffectiveConfig();
     const config = useMemo(() => ({ ...effective, channels: effective.channels.filter((channel) => channel.scope === "system" || channel.id === PUBLIC_MODEL_CATALOG_ID) }), [effective]);
     const settings = value || initial;
@@ -42,7 +36,15 @@ export function CanvasAgentVideoApprovalSettings({ initial, value, theme, disabl
         const profile = modelCapabilityConfigFor(config, next).video;
         if (!profile) return;
         const normalized = normalizeVideoValue(profile, { seconds: duration, ratio: settings.size, resolution: settings.quality });
-        onChange({ ...agentApprovalModelSelection(config, next), size: normalized.ratio, quality: normalized.resolution, durationSeconds: Number(normalized.seconds), videoGenerateAudio: settings.videoGenerateAudio, videoWatermark: settings.videoWatermark, videoArkPrivateAssetUpload: settings.videoArkPrivateAssetUpload });
+        onChange({
+            ...agentApprovalModelSelection(config, next),
+            size: normalized.ratio,
+            quality: normalized.resolution,
+            durationSeconds: Number(normalized.seconds),
+            videoGenerateAudio: settings.videoGenerateAudio,
+            videoWatermark: settings.videoWatermark,
+            videoArkPrivateAssetUpload: settings.videoArkPrivateAssetUpload,
+        });
     };
 
     const changeOption = (key: "vquality" | "size" | "videoSeconds" | "videoGenerateAudio" | "videoWatermark" | "videoArkPrivateAssetUpload", next: string) => {
@@ -75,12 +77,32 @@ export function CanvasAgentVideoApprovalSettings({ initial, value, theme, disabl
     return (
         <fieldset disabled={disabled} className="min-w-0 space-y-3 border-0 p-0" data-canvas-no-zoom data-canvas-wheel-scroll aria-label="视频生成设置">
             <div className="space-y-1.5">
-                <div className="text-xs" style={{ color: theme.node.muted }}>生成模型</div>
+                <div className="text-xs" style={{ color: theme.node.muted }}>
+                    生成模型
+                </div>
                 <ModelPicker config={config} capability="video" value={model} onChange={changeModel} requirements={requirements} variant="creation" fullWidth showOptionPrices placeholder="选择生成模型" popoverClassName="agent-model-picker-popover" />
             </div>
-            {model ? <VideoSettingsPanel config={{ ...config, model, size: settings.size, videoSeconds: duration, vquality: settings.quality, videoGenerateAudio: audio, videoWatermark: watermark, videoArkPrivateAssetUpload: privateAssetUpload }} onConfigChange={changeOption} theme={theme} showTitle={false} className="min-w-0 space-y-3" /> : <p className="text-xs" style={{ color: theme.node.muted }}>当前模型不在可选目录中，可重新选择；提交时将重新校验模型与规格。</p>}
-            <p className="text-xs" style={{ color: theme.node.text }}>本次规格：{settings.size}{settings.quality ? ` · ${settings.quality}` : ""}{settings.durationSeconds ? ` · ${settings.durationSeconds} 秒` : ""}</p>
-            <p className="text-xs" style={{ color: theme.node.muted }}>修改仅用于本次生成，费用按最终模型和规格计算。</p>
+            {model ? (
+                <VideoSettingsPanel
+                    config={{ ...config, model, size: settings.size, videoSeconds: duration, vquality: settings.quality, videoGenerateAudio: audio, videoWatermark: watermark, videoArkPrivateAssetUpload: privateAssetUpload }}
+                    onConfigChange={changeOption}
+                    theme={theme}
+                    showTitle={false}
+                    className="min-w-0 space-y-3"
+                />
+            ) : (
+                <p className="text-xs" style={{ color: theme.node.muted }}>
+                    当前模型不在可选目录中，可重新选择；提交时将重新校验模型与规格。
+                </p>
+            )}
+            <p className="text-xs" style={{ color: theme.node.text }}>
+                本次规格：{settings.size}
+                {settings.quality ? ` · ${settings.quality}` : ""}
+                {settings.durationSeconds ? ` · ${settings.durationSeconds} 秒` : ""}
+            </p>
+            <p className="text-xs" style={{ color: theme.node.muted }}>
+                修改仅用于本次生成，费用按最终模型和规格计算。
+            </p>
         </fieldset>
     );
 }

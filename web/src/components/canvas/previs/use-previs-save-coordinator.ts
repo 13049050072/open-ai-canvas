@@ -8,6 +8,7 @@ import type { PrevisScene } from "@/types/previs";
 export type PrevisSaveController = {
     progress: PrevisSaveProgress;
     commitScene: (scene: PrevisScene) => void;
+    retrySave: () => Promise<boolean>;
     prepareClose: () => Promise<PrevisCloseDecision>;
     handlePageHide: () => Promise<boolean>;
 };
@@ -59,7 +60,10 @@ export function usePrevisSaveCoordinator(input: { sceneId: string | null; initia
             coordinatorRef.current = null;
             const pending = coordinator.getSnapshot();
             if (pending.confirmedRevision < pending.revision) {
-                void coordinator.flushLatest().catch(() => undefined).finally(() => coordinator.dispose());
+                void coordinator
+                    .flushLatest()
+                    .catch(() => undefined)
+                    .finally(() => coordinator.dispose());
                 return;
             }
             coordinator.dispose();
@@ -78,6 +82,14 @@ export function usePrevisSaveCoordinator(input: { sceneId: string | null; initia
         },
         [syncProgress],
     );
+
+    const retrySave = useCallback(async () => {
+        const coordinator = coordinatorRef.current;
+        if (!coordinator) return false;
+        const success = await coordinator.flushLatest();
+        syncProgress();
+        return success;
+    }, [syncProgress]);
 
     const prepareClose = useCallback(async () => {
         const coordinator = coordinatorRef.current;
@@ -107,5 +119,5 @@ export function usePrevisSaveCoordinator(input: { sceneId: string | null; initia
         }
     }, [syncProgress]);
 
-    return { progress, commitScene, prepareClose, handlePageHide };
+    return { progress, commitScene, retrySave, prepareClose, handlePageHide };
 }

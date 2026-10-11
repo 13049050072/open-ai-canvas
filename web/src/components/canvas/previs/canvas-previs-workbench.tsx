@@ -79,7 +79,7 @@ export function CanvasPrevisWorkbench({
     onDeleteImageNode: (nodeId: string) => void;
     onFlush?: () => void | Promise<void>;
 }) {
-    const { message } = App.useApp();
+    const { message, modal } = App.useApp();
     const theme = canvasThemes[useActiveTheme()];
     const effectiveCanvasId = useMemo(() => {
         const explicit = canvasId?.trim();
@@ -241,6 +241,7 @@ export function CanvasPrevisWorkbench({
         resetWorkbench();
     }, [open, resetWorkbench, scene, writeDraft]);
 
+    // 打开会话时检查合法本地恢复候选
     // 父级项目收到 Agent 的预演台语义补丁后，scene.id 不变但 updatedAt 会变化；
     // 不能只按 scene.id 忽略，否则打开着的工作台永远看不到 Agent 的修改。
     useEffect(() => {
@@ -257,7 +258,7 @@ export function CanvasPrevisWorkbench({
         setSelectedBone(null);
         setPlayhead(0);
         message.info("Agent 已更新预演场景");
-    }, [message, open, scene, setPlayhead, setSelectedBone, setSelectedLightId, setSelectedObjectId, writeDraft]);
+    }, [message, modal, open, scene, writeDraft]);
 
     const activeShot = draft?.shots?.find((item) => item.id === draft.activeShotId) || draft?.shots?.[0] || null;
     const activeCamera = draft?.cameras?.find((item) => item.id === activeShot?.cameraId) || draft?.cameras?.[0] || null;
@@ -355,6 +356,7 @@ export function CanvasPrevisWorkbench({
         [writeAndPublish],
     );
 
+    // 打开会话时检查合法本地恢复候选之后，挂载暂存手势生命周期。
     // 暂存手势的终止生命周期：常驻安装，非活跃时 end 为空操作。
     useEffect(
         () =>
@@ -466,7 +468,14 @@ export function CanvasPrevisWorkbench({
                 return;
             }
             recordPrevisDiagnostic("PREVIS_CLOSE_BLOCKED", { sceneId: draftRef.current?.id, saveOutcome: "stay", revision: saveController.progress.revision });
-            message.error(decision.message);
+            modal.confirm({
+                title: "保存未完成",
+                content: decision.message,
+                okText: "放弃修改并关闭",
+                cancelText: "留在预演台",
+                okButtonProps: { danger: true },
+                onOk: onClose,
+            });
             closingRef.current = false;
         })();
     };
@@ -1246,6 +1255,12 @@ export function CanvasPrevisWorkbench({
                 <span className={`previs-desk-save ${saveStatusClass}`} aria-live="polite">
                     {saveIndicator.label}
                 </span>
+                {saveController.progress.status === "error" ? (
+                    <button type="button" className="previs-desk-header-action" onClick={() => void saveController.retrySave()}>
+                        <Save className="size-3.5" />
+                        重试保存
+                    </button>
+                ) : null}
                 {onboardingScope ? (
                     <button type="button" className="previs-desk-icon-button" aria-label="重新开始引导" title="重新开始引导" onClick={() => setOnboardingRestartSignal((value) => value + 1)}>
                         <Lightbulb className="size-4" />

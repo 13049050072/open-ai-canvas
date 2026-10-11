@@ -45,8 +45,6 @@ export function commitCanvasGenerationResult(current: CanvasNodeData[], before: 
     const existingIds = new Set(current.map((node) => node.id));
     return [
         ...committedWithAdditional,
-        ...additionalNodes
-            .filter((node) => !existingIds.has(node.id))
-            .map((node) => ({ ...node, position: { x: node.position.x + merged.position.x - result.position.x, y: node.position.y + merged.position.y - result.position.y } })),
+        ...additionalNodes.filter((node) => !existingIds.has(node.id)).map((node) => ({ ...node, position: { x: node.position.x + merged.position.x - result.position.x, y: node.position.y + merged.position.y - result.position.y } })),
     ];
 }

@@ -456,7 +456,10 @@ async function flushResourceAccessBatch() {
     }
 
     try {
-        const data = await http.post<{ items: ResourceAccessBatchItem[] }>("/resources/access", entries.map((entry) => entry.payload));
+        const data = await http.post<{ items: ResourceAccessBatchItem[] }>(
+            "/resources/access",
+            entries.map((entry) => entry.payload),
+        );
         await Promise.all(
             entries.map(async (entry, index) => {
                 try {

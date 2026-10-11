@@ -219,7 +219,17 @@ func TestRepriceTierFieldValidation(t *testing.T) {
 	}
 }
 
-func TestBatchRepricingRollsBackOnConcurrentChange(t *testing.T) {
+func TestNormalizeChannelModelTierSelectorAcceptsResolutionTypo(t *testing.T) {
+	selector, resolution, videoSeconds, err := normalizeChannelModelTierSelector("image", ChannelModelPriceTierRequest{
+		Selector: map[string]string{"resoluton": "2K"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if selector["resolution"] != "2k" || selector["resoluton"] != "" || resolution != "*" || videoSeconds != 0 {
+		t.Fatalf("selector=%v resolution=%q videoSeconds=%d", selector, resolution, videoSeconds)
+	}
+}
 	for _, target := range []string{"model", "tier"} {
 		t.Run(target, func(t *testing.T) {
 			svc, db, _ := seedRepricingModels(t)

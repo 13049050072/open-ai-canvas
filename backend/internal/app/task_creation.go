@@ -578,7 +578,7 @@ func (s *Service) resolveSystemChannelModelSelection(input map[string]any, taskT
 			return input, InvalidModelSelection("指定的模型能力配置无效，请联系管理员")
 		}
 		if match := MatchCapability(*capabilitySpec, intent); !match.Matched {
-			return input, ModelCapabilityNotSupported("所选模型不支持当前请求：" + strings.Join(match.Reasons, "；"))
+			return input, modelCapabilityMismatchError(match)
 		}
 	}
 

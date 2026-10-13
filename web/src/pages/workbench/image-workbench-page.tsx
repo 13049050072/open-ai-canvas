@@ -894,7 +894,6 @@ export function WorkbenchPage({ kind }: { kind: WorkbenchKind }) {
         <div className="workbench-tool-library" id="workbench-tool-library">
             <div className="workbench-tool-library-heading">
                 <div>
-                    <strong>选择创作工具</strong>
                     <span>选一个场景，或直接写提示词</span>
                 </div>
                 {tool ? (
@@ -1545,7 +1544,7 @@ function ToolCard({ tool, selected, onClick }: { tool: WorkbenchTool; selected: 
     const subtitle = isModelIdLike(tool.subtitle) ? tool.description || "" : tool.subtitle || tool.description;
     return (
         <button type="button" className={`workbench-tool-card ${selected ? "is-selected" : ""} is-${visual.tone}`} aria-pressed={selected} onClick={onClick}>
-            <SpotlightSurface className="workbench-tool-card-surface" spotlightColor="color-mix(in srgb, var(--user-ink) 5%, transparent)">
+            <SpotlightSurface className="workbench-tool-card-spotlight" contentClassName="workbench-tool-card-surface relative z-[1]" spotlightColor="color-mix(in srgb, var(--user-ink) 5%, transparent)">
                 <span className="workbench-tool-card-image">{tool.coverUrl || tool.iconUrl ? <img src={tool.coverUrl || tool.iconUrl} alt="" /> : visual.icon}</span>
                 <span className="workbench-tool-card-copy">
                     <strong>{tool.name}</strong>

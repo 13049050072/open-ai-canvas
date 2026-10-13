@@ -193,11 +193,15 @@ export function ImageParameterSchemaEditor({ definitions, parameters, disabled, 
                 const resolutionChoices = isResolution ? (definition.values?.length ? definition.values : IMAGE_RESOLUTIONS.filter((tier) => imageParameterAccepts(definition, tier))) : [];
                 const quickResolutionChoices = isResolution && (!definition.values?.length || definition.values.some((value) => IMAGE_RESOLUTIONS.includes(String(value).toLowerCase()))) ? resolutionChoices : [];
                 const updateValues = (items: string[]) => {
-                    const values = [...new Set(items.map((item) => {
-                        const declared = definition.values?.find((v) => String(v) === item);
-                        if (declared !== undefined) return declared;
-                        return isResolution && !definition.values?.length && /^\d+(?:\.\d+)?k$/i.test(item.trim()) ? item.trim().toLowerCase() : item;
-                    }))];
+                    const values = [
+                        ...new Set(
+                            items.map((item) => {
+                                const declared = definition.values?.find((v) => String(v) === item);
+                                if (declared !== undefined) return declared;
+                                return isResolution && !definition.values?.length && /^\d+(?:\.\d+)?k$/i.test(item.trim()) ? item.trim().toLowerCase() : item;
+                            }),
+                        ),
+                    ];
                     const next = { ...field, values };
                     update(field.name, { values, default: isResolution && !values.length ? undefined : imageParameterAccepts(next, field.default) ? field.default : values[0] });
                 };
@@ -223,7 +227,10 @@ export function ImageParameterSchemaEditor({ definitions, parameters, disabled, 
                                                 mode={definition.values?.length ? "multiple" : "tags"}
                                                 disabled={disabled}
                                                 value={(field.values || []).map(String)}
-                                                options={(isResolution ? resolutionChoices : definition.values || []).map((v) => ({ label: isResolution && IMAGE_RESOLUTIONS.includes(String(v).toLowerCase()) ? String(v).toUpperCase() : String(v), value: String(v) }))}
+                                                options={(isResolution ? resolutionChoices : definition.values || []).map((v) => ({
+                                                    label: isResolution && IMAGE_RESOLUTIONS.includes(String(v).toLowerCase()) ? String(v).toUpperCase() : String(v),
+                                                    value: String(v),
+                                                }))}
                                                 tokenSeparators={[",", "，"]}
                                                 placeholder={isResolution ? "输入后按回车，或点击下方档位" : undefined}
                                                 onChange={updateValues}
@@ -349,7 +356,9 @@ export function ImageParameterSizeEditor({ profile, definition, disabled, onChan
             ) : null}
             {field.enabled !== false ? (
                 grouped && !tiers.length ? (
-                    <p role="status" className="image-size-hint">请先在上方分辨率中选择支持的档位，再配置各档位的比例和尺寸。</p>
+                    <p role="status" className="image-size-hint">
+                        请先在上方分辨率中选择支持的档位，再配置各档位的比例和尺寸。
+                    </p>
                 ) : grouped || pixelSize ? (
                     <ImageSizePresetsEditor
                         profile={editorProfile}

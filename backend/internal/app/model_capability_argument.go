@@ -28,7 +28,7 @@ func newModelCapabilityArgumentError(field, issue string, cause error) error {
 func modelCapabilityMismatchError(match CapabilityMatch) error {
 	details := map[string]any{"capabilityIssues": match.Issues}
 	for _, issue := range match.Issues {
-		if issue.Kind != "option" {
+		if issue.Kind != "option" && issue.Kind != "image_parameter" {
 			continue
 		}
 		field := issue.Name

@@ -8,6 +8,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -325,7 +326,21 @@ func MatchCapability(spec CapabilitySpec, intent ModelRequestIntent) CapabilityM
 			}
 		}
 		if _, err := resolveImageParameterValues(parameters, values); err != nil {
-			addIssue("image_parameter", "imageParameters", err.Error())
+			var modelErr *ModelError
+			if errors.As(err, &modelErr) && modelErr != nil {
+				field, _ := modelErr.Details["field"].(string)
+				message, _ := modelErr.Details["message"].(string)
+				if field != "" {
+					if message == "" {
+						message = modelErr.Error()
+					}
+					addIssue("image_parameter", field, message)
+				} else {
+					addIssue("image_parameter", "imageParameters", err.Error())
+				}
+			} else {
+				addIssue("image_parameter", "imageParameters", err.Error())
+			}
 		}
 	}
 	if normalizeCapability(intent.Capability) != normalizeCapability(spec.Capability) {

@@ -262,6 +262,14 @@ func imageParameterValue(p protocol.ImageParameter, value any) any {
 	return value
 }
 
+func imageParameterAdmissionError(field, issue, message string) error {
+	return NewModelError(ErrCodeModelCapabilityNotSupported, message).WithDetails(map[string]any{
+		"field":   field,
+		"issue":   issue,
+		"message": message,
+	})
+}
+
 func resolveImageParameterValues(parameters []protocol.ImageParameter, values map[string]any) (map[string]any, error) {
 	allowed := map[string]protocol.ImageParameter{}
 	result := imageParameterDefaults(parameters)
@@ -273,11 +281,11 @@ func resolveImageParameterValues(parameters []protocol.ImageParameter, values ma
 	for name, value := range values {
 		p, ok := allowed[name]
 		if !ok {
-			return nil, ModelCapabilityNotSupported("当前图片模型未启用参数：" + name)
+			return nil, imageParameterAdmissionError(name, "unsupported_value", "当前图片模型未启用参数："+name)
 		}
 		value = imageParameterValue(p, value)
 		if !p.Accepts(value) {
-			return nil, ModelCapabilityNotSupported("图片参数超出支持范围：" + p.Label)
+			return nil, imageParameterAdmissionError(p.Name, "unsupported_value", "图片参数超出支持范围："+p.Label)
 		}
 		if value != nil && value != "" {
 			result[name] = value
@@ -285,7 +293,7 @@ func resolveImageParameterValues(parameters []protocol.ImageParameter, values ma
 	}
 	for _, p := range parameters {
 		if p.IsEnabled() && p.Required && (result[p.Name] == nil || result[p.Name] == "") {
-			return nil, ModelCapabilityNotSupported("请填写图片参数：" + p.Label)
+			return nil, imageParameterAdmissionError(p.Name, "required", "请填写图片参数："+p.Label)
 		}
 	}
 	return result, nil

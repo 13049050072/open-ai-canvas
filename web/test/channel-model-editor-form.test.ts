@@ -1,7 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import { defaultModelCapabilityConfig } from "../src/lib/model-capabilities";
 import type { ModelProtocolDefinition } from "../src/lib/model-protocols";
-import { changeChannelModelCapability, duplicateChannelModelValues, editorSectionForField, initialChannelModelValues, updateChannelModelUpstreamCapabilities, validateChannelModelPrices, validateChannelModelProtocol } from "../src/pages/admin/components/channel-model-editor-form";
+import {
+    changeChannelModelCapability,
+    duplicateChannelModelValues,
+    editorSectionForField,
+    initialChannelModelValues,
+    updateChannelModelUpstreamCapabilities,
+    validateChannelModelPrices,
+    validateChannelModelProtocol,
+} from "../src/pages/admin/components/channel-model-editor-form";
 import { defaultPriceTier } from "../src/pages/admin/components/channel-model-price-tier-form";
 import type { ChannelModel, ChannelModelPriceTier } from "../src/services/api/wallet";
 
@@ -84,7 +92,10 @@ describe("channel model editor drafts", () => {
             capability: "video",
             protocol: "video",
             enabled: false,
-            priceTiers: [{ providerModelKey: "", unitPrice: 5 }, { providerModelKey: "vendor-video-hq", unitPrice: 8 }],
+            priceTiers: [
+                { providerModelKey: "", unitPrice: 5 },
+                { providerModelKey: "vendor-video-hq", unitPrice: 8 },
+            ],
         });
         expect(draft.tags).not.toBe(item.tags);
     });

@@ -430,7 +430,9 @@
     font: inherit;
     font-size: 12px;
     cursor: pointer;
-    transition: background-color 140ms ease, border-color 140ms ease;
+    transition:
+        background-color 140ms ease,
+        border-color 140ms ease;
 }
 .workbench-slot-upload svg {
     width: 15px;
@@ -467,7 +469,9 @@
     color: var(--wb-text);
     text-align: left;
     cursor: pointer;
-    transition: background-color 140ms ease, border-color 140ms ease;
+    transition:
+        background-color 140ms ease,
+        border-color 140ms ease;
 }
 .workbench-reference-slot-empty:hover:not(:disabled) {
     border-color: var(--user-primary, #5b5fc7);

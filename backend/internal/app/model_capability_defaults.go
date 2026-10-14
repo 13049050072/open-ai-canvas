@@ -207,7 +207,7 @@ func DefaultModelCapabilityConfigForModel(protocol string, modelName string) *Mo
 		video.References.MaxAudios = 3
 		video.References.MaxAudioBytes = 15 * 1024 * 1024
 		video.References.MaxAudioDuration = 15
-		video.Duration = VideoDurationConfig{Selection: "enum", Values: []int{4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}, Default: 5}
+		video.Duration = VideoDurationConfig{Selection: "enum", Values: []int{4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30}, Default: 5}
 		video.Ratios = []string{"adaptive", "21:9", "16:9", "4:3", "1:1", "3:4", "9:16"}
 		video.DefaultRatio = "16:9"
 		video.Resolutions = []string{"768P", "2K"}

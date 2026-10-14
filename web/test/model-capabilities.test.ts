@@ -36,6 +36,18 @@ test("text multimodal capability is not guessed from a model name", () => {
     }
 });
 
+test("MiniMax H3 offers every duration from 4 to 30 seconds without changing the default", () => {
+    const profile = defaultModelCapabilityConfig("minimax-video", "MiniMax-H3").video!;
+    assert.deepEqual(
+        profile.duration.values,
+        Array.from({ length: 27 }, (_, index) => index + 4),
+    );
+    assert.equal(profile.duration.default, 5);
+    for (const seconds of ["4", "15", "16", "20", "30"]) {
+        assert.equal(normalizeVideoValue(profile, { seconds, ratio: "16:9", resolution: "768P" }).seconds, seconds);
+    }
+});
+
 test("switching to MiniMax H3 replaces an unsupported 720p value with 768P", () => {
     const profile = defaultModelCapabilityConfig("minimax-video", "MiniMax-H3").video!;
 

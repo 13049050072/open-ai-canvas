@@ -23,7 +23,10 @@ test("same-origin resource redirects request CORS before assigning src", async (
         for (const src of ["/api/resources/image/file", "https://cdn.example/image.png", "data:image/png;base64,test", "blob:local-image"]) {
             await loadRasterImage(src);
         }
-        assert.deepEqual(requests.map((request) => request.crossOrigin), ["anonymous", "anonymous", "", ""]);
+        assert.deepEqual(
+            requests.map((request) => request.crossOrigin),
+            ["anonymous", "anonymous", "", ""],
+        );
     } finally {
         globalThis.Image = originalImage;
         if (originalLocation) Object.defineProperty(globalThis, "location", originalLocation);
@@ -57,7 +60,13 @@ test("crop, resize and split export a redirected resource without taint", async 
                 return {
                     width: 0,
                     height: 0,
-                    getContext() { return { drawImage(image: { tainted: boolean }) { tainted = image.tainted; } }; },
+                    getContext() {
+                        return {
+                            drawImage(image: { tainted: boolean }) {
+                                tainted = image.tainted;
+                            },
+                        };
+                    },
                     toDataURL() {
                         if (tainted) throw new DOMException("Tainted canvases may not be exported", "SecurityError");
                         outputs.push({ width: this.width, height: this.height });
@@ -82,7 +91,9 @@ test("crop, resize and split export a redirected resource without taint", async 
 
 test("readable local sources skip remote resource reads", async () => {
     for (const url of ["data:image/png;base64,local", "blob:local-image"]) {
-        const source = await prepareRasterSource(url, async () => { throw new Error("must not read remote bytes"); });
+        const source = await prepareRasterSource(url, async () => {
+            throw new Error("must not read remote bytes");
+        });
         assert.equal(source.url, url);
         source.release();
     }
@@ -102,8 +113,16 @@ test("resource read failures propagate without falling back to the display URL",
     let fetched = false;
     const failure = new Error("resource authorization failed");
     try {
-        globalThis.fetch = async () => { fetched = true; throw new Error("unsafe fallback"); };
-        await assert.rejects(prepareRasterSource("/api/resources/image/file", async () => { throw failure; }), (error) => error === failure);
+        globalThis.fetch = async () => {
+            fetched = true;
+            throw new Error("unsafe fallback");
+        };
+        await assert.rejects(
+            prepareRasterSource("/api/resources/image/file", async () => {
+                throw failure;
+            }),
+            (error) => error === failure,
+        );
         assert.equal(fetched, false);
     } finally {
         globalThis.fetch = originalFetch;
@@ -133,7 +152,9 @@ test("HTTP and CORS failures stop processing instead of returning an unsafe URL"
         globalThis.fetch = async () => new Response("forbidden", { status: 403 });
         await assert.rejects(prepareRasterSource("https://cdn.example/image.png"), /原图读取失败（403）/);
         const failure = new TypeError("Failed to fetch");
-        globalThis.fetch = async () => { throw failure; };
+        globalThis.fetch = async () => {
+            throw failure;
+        };
         await assert.rejects(prepareRasterSource("https://cdn.example/image.png"), (error) => error === failure);
         await assert.rejects(prepareRasterSource(" "), /图片地址为空/);
     } finally {

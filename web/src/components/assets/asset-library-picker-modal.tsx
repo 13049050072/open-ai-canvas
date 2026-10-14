@@ -169,7 +169,14 @@ export function AssetLibraryPickerModal({
         () =>
             (remoteQuery.data?.assets || [])
                 .filter((asset) => asset.kind !== "model" && (asset.kind !== "entity" || allowCharacters))
-                .map((asset) => remoteAssetToPickerItem(asset, items.find((item) => item.id === asset.id), acceptRemoteItems, remoteItemDisabledReason?.(asset))),
+                .map((asset) =>
+                    remoteAssetToPickerItem(
+                        asset,
+                        items.find((item) => item.id === asset.id),
+                        acceptRemoteItems,
+                        remoteItemDisabledReason?.(asset),
+                    ),
+                ),
         [acceptRemoteItems, allowCharacters, remoteItemDisabledReason, remoteQuery.data, items],
     );
     const uploadInputRef = useRef<HTMLInputElement>(null);

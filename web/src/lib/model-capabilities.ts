@@ -455,7 +455,7 @@ export function defaultModelCapabilityConfig(protocol?: ModelProtocol, model = "
         video.resolutions = ["1080p"];
         video.defaultResolution = "1080p";
     }
-    if (protocol === "minimax-video") {
+    if (protocol === "minimax-video" || protocol === "metaso-h3") {
         video.references.maxImages = 9;
         video.references.maxImageBytes = 30 * 1024 * 1024;
         video.references.maxVideos = 3;

@@ -197,7 +197,7 @@ func DefaultModelCapabilityConfigForModel(protocol string, modelName string) *Mo
 		video.Ratios = []string{"16:9", "9:16", "1:1"}
 		video.Resolutions = []string{"1080p"}
 		video.DefaultResolution = "1080p"
-	case model.ChannelInterfaceMiniMaxVideo:
+	case model.ChannelInterfaceMiniMaxVideo, model.ChannelInterfaceType("metaso-h3"):
 		video.Operations = append(video.Operations, "reference_to_video")
 		video.References.MaxImages = 9
 		video.References.MaxImageBytes = 30 * 1024 * 1024

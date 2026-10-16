@@ -84,6 +84,8 @@ func TestCloudAgentMediaCompletionKeepsGenerationAndWritebackFailures(t *testing
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			s, db, args := agentMediaFixture(t)
+			// Completion is advanced explicitly below, without a competing waiter.
+			s.closeApprovedCloudAgentMediaWaiters()
 			run, _ := agentMediaRun(t, s, args, "request_approval")
 			if err := s.advanceCloudAgentByID("user", run.ID); err != nil {
 				t.Fatal(err)

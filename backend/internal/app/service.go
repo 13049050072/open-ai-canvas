@@ -98,6 +98,12 @@ type Service struct {
 	approvedMediaClosed      bool
 	providerCatalogOnce      sync.Once
 	providerCatalog          *providercatalog.Source
+	creditPolicyMu           sync.RWMutex
+	creditPolicyCache        *CreditPolicy
+	creditPolicyAt           time.Time
+	modelAvailabilityMu      sync.RWMutex
+	modelAvailabilityCache   map[publicModelAvailabilityKey]*PublicModelAvailability
+	modelAvailabilityAt      time.Time
 }
 
 const taskWorkerConcurrency = 3

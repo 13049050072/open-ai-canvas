@@ -13,6 +13,9 @@ func TestCloudAgentMediaCleanupUsesPersistedTaskTarget(t *testing.T) {
 	for _, missingTarget := range []bool{false, true} {
 		t.Run(map[bool]string{false: "known target", true: "unknown target"}[missingTarget], func(t *testing.T) {
 			s, db, args := agentMediaFixture(t)
+			// This test drives terminal cleanup directly; a live approval waiter
+			// would race its deliberately damaged transcript and revision.
+			s.closeApprovedCloudAgentMediaWaiters()
 			run, _ := agentMediaRun(t, s, args, "request_approval")
 			if err := s.advanceCloudAgentByID("user", run.ID); err != nil {
 				t.Fatal(err)

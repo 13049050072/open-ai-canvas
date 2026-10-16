@@ -254,30 +254,31 @@ export async function loadCanvasProjectForEditing(id: string, options: { onLoad?
         if (dirty && !sameCanvasContent(local, remote)) {
             const live = requireUnchangedLocal(local, "画布仍在更新，未确认操作已保留");
             const baseline = pendingCanvasMutations.get(id)?.baseline ?? acknowledgedProjects.get(id);
+            if (!baseline && incrementalSession && !verifiedProjects.has(id)) {
+                const storage = localForageStorageForScope(scope);
+                const key = `yingce:canvas-unverified-recovery:${id}`;
+                const raw = await storage.getItem(key);
+                const previous: unknown = raw ? JSON.parse(raw) : [];
+                const copies = Array.isArray(previous) ? previous : [];
+                await storage.setItem(key, JSON.stringify([...copies.slice(-2), { project: live || local, savedAt: new Date().toISOString(), cloudRevision: remote.revision }]));
+            }
             let projected: CanvasProject;
             try {
-<<<<<<< HEAD
-<<<<<<< HEAD
-                projected = { ...rebaseCanvas(baseline, remote, live || local), remoteContentHash: hash };
-=======
-=======
->>>>>>> 8eff9268
-                if (!baseline) throw new Error("缺少画布合并基线，已保留本地内容");
-                // 未核对的旧缓存不是最新云端文档的编辑结果。保留恢复副本，
-                // 再按会话原基线三方合并，避免把云端新增节点推导成 remove_node。
-                if (!pendingCanvasMutations.get(id) && incrementalSession && !verifiedProjects.has(id) && !sameCanvasContent(baseline, remote) && baseline.remoteContentHash !== (await canvasContentHash(baseline))) {
-                    const storage = localForageStorageForScope(scope);
-                    const key = `yingce:canvas-unverified-recovery:${id}`;
-                    const raw = await storage.getItem(key);
-                    const previous: unknown = raw ? JSON.parse(raw) : [];
-                    const copies = Array.isArray(previous) ? previous : [];
-                    await storage.setItem(key, JSON.stringify([...copies.slice(-2), { project: local, savedAt: new Date().toISOString(), cloudRevision: remote.revision }]));
+                if (!baseline) {
+                    projected = { ...remote, title: local.title, nodes: [...remote.nodes, ...local.nodes.filter((node) => !remote.nodes.some((item) => item.id === node.id))], connections: [...remote.connections, ...local.connections.filter((connection) => !remote.connections.some((item) => item.id === connection.id))], viewport: local.viewport };
+                } else {
+                    // 未核对的旧缓存不是最新云端文档的编辑结果。保留恢复副本，
+                    // 再按会话原基线三方合并，避免把云端新增节点推导成 remove_node。
+                    if (!pendingCanvasMutations.get(id) && incrementalSession && !verifiedProjects.has(id) && !sameCanvasContent(baseline, remote) && baseline.remoteContentHash !== (await canvasContentHash(baseline))) {
+                        const storage = localForageStorageForScope(scope);
+                        const key = `yingce:canvas-unverified-recovery:${id}`;
+                        const raw = await storage.getItem(key);
+                        const previous: unknown = raw ? JSON.parse(raw) : [];
+                        const copies = Array.isArray(previous) ? previous : [];
+                        await storage.setItem(key, JSON.stringify([...copies.slice(-2), { project: local, savedAt: new Date().toISOString(), cloudRevision: remote.revision }]));
+                    }
+                    projected = mergeAgentCanvasEditor(baseline, remote, live?.nodes || local.nodes, live?.connections || local.connections, live || local);
                 }
-                projected = { ...mergeAgentCanvasEditor(baseline, remote, live?.nodes || local.nodes, live?.connections || local.connections, live || local), remoteContentHash: hash };
-<<<<<<< HEAD
->>>>>>> be5c7c62
-=======
->>>>>>> 8eff9268
             } catch (error) {
                 unbasedProjects.add(id);
                 useSyncProgressStore.getState().setProjectProgress(id, { phase: "error", errorKind: "conflict", pendingChanges: 1, message: error instanceof Error ? error.message : "画布修改存在冲突，已保留本地草稿" });
@@ -296,8 +297,8 @@ export async function loadCanvasProjectForEditing(id: string, options: { onLoad?
         }
         // Editing/generation may continue during the network request or draft write.
         // Viewport-only updates are not document edits and must not block adopting cloud content.
-        const live = requireUnchangedLocal(local, "画布仍在更新，已保留本地内容");
-        const project = { ...projected, viewport: live?.viewport || local?.viewport || remote.viewport || { x: 0, y: 0, k: 1 }, remoteContentHash: hash };
+        const currentLive = requireUnchangedLocal(local, "画布仍在更新，已保留本地内容");
+        const project = { ...projected, viewport: currentLive?.viewport || local?.viewport || remote.viewport || { x: 0, y: 0, k: 1 }, remoteContentHash: hash };
         // Align live editor refs synchronously before publishing the new revision.
         // A generation callback must never see old rendered nodes paired with a new revision.
         options.onLoad?.(project);
@@ -306,19 +307,9 @@ export async function loadCanvasProjectForEditing(id: string, options: { onLoad?
         useCanvasStore.setState((state) => ({ projects: local ? state.projects.map((item) => (item.id === id ? project : item)) : [...state.projects, project] }));
         await flushCanvasStorePersistence();
         await persistConfirmedCanvasBaselines();
-<<<<<<< HEAD
-<<<<<<< HEAD
-        useSyncProgressStore.getState().setProjectProgress(id, { phase: "done", cloudRevision: project.revision, pendingChanges: 0, message: "已确认云端画布基线" });
-=======
         const pending = pendingCanvasMutations.has(id) || !sameCanvasContent(remote, project);
         useSyncProgressStore.getState().setProjectProgress(id, { phase: pending ? "pending" : "done", cloudRevision: project.revision, pendingChanges: pending ? 1 : 0, message: pending ? "云端更新已合并，保留本地未确认操作" : "已确认云端画布基线" });
         if (pending) scheduleRemoteUserDataSync();
->>>>>>> be5c7c62
-=======
-        const pending = pendingCanvasMutations.has(id) || !sameCanvasContent(remote, project);
-        useSyncProgressStore.getState().setProjectProgress(id, { phase: pending ? "pending" : "done", cloudRevision: project.revision, pendingChanges: pending ? 1 : 0, message: pending ? "云端更新已合并，保留本地未确认操作" : "已确认云端画布基线" });
-        if (pending) scheduleRemoteUserDataSync();
->>>>>>> 8eff9268
         return project;
     });
     const pending = { mode, promise: request } as RemoteProjectLoad;

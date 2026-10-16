@@ -17,14 +17,7 @@ const paths: Record<string, string> = {
     "@/lib/canvas/canvas-content": join(dir, "content.ts"),
     "@/stores/use-sync-progress-store": join(dir, "progress.ts"),
     "@/lib/canvas/canvas-task-mutation": fileURLToPath(new URL("../src/lib/canvas/canvas-task-mutation.ts", import.meta.url)),
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
     "@/lib/canvas/agent-canvas-patch": new URL("../src/lib/canvas/agent-canvas-patch.ts", import.meta.url).pathname,
->>>>>>> be5c7c62
-=======
-    "@/lib/canvas/agent-canvas-patch": new URL("../src/lib/canvas/agent-canvas-patch.ts", import.meta.url).pathname,
->>>>>>> 8eff9268
     "./user-data-sync-media": join(dir, "media.ts"),
     "./canvas-edit-leases": stubPath,
     "@/lib/canvas/agent-canvas-patch": fileURLToPath(new URL("lib/canvas/agent-canvas-patch.ts", root)),

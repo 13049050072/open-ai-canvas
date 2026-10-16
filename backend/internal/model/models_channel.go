@@ -25,8 +25,10 @@ type ModelChannel struct {
 	ProxyURL   string `json:"proxyUrl" gorm:"size:512"`
 	ModelsJSON string `json:"modelsJson" gorm:"type:text"`
 	// RetiredModelsJSON 记录已被一个模型家族吸收的上游 SKU，防止目录拉取时重新创建重复记录。
-	RetiredModelsJSON string         `json:"-" gorm:"type:text"`
-	HeadersJSON       string         `json:"-" gorm:"type:text"`
+	RetiredModelsJSON string `json:"-" gorm:"type:text"`
+	HeadersJSON       string `json:"-" gorm:"type:text"`
+	// CatalogProviderID 记录渠道由哪个目录服务商一键接入；空表示自定义渠道。只用于来源展示。
+	CatalogProviderID string         `json:"catalogProviderId" gorm:"size:64;not null;default:'';index"`
 	CreatedAt         time.Time      `json:"createdAt"`
 	UpdatedAt         time.Time      `json:"updatedAt"`
 	DeletedAt         gorm.DeletedAt `json:"-" gorm:"index"`
@@ -61,6 +63,8 @@ type ChannelModel struct {
 	CapabilityConfigJSON         string               `json:"-" gorm:"type:text"`
 	CapabilityVersion            int64                `json:"capabilityVersion"`
 	CapabilityConfig             map[string]any       `json:"capabilityConfig,omitempty" gorm:"-"`
+	// CatalogModelKey 记录来自服务商目录的推荐模型 key，便于排查来源。
+	CatalogModelKey string `json:"catalogModelKey" gorm:"size:120;not null;default:''"`
 	// PriceTiers 是系统渠道模型的价格真相。标量价格仅为旧调用与历史数据兼容，
 	// 新的创作端报价必须按所选规格命中一个价格档。
 	PriceTiers []ChannelModelPriceTier `json:"priceTiers" gorm:"-"`

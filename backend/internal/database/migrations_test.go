@@ -106,7 +106,8 @@ func TestMigrateSchemaNormalizesLegacyWorkbenchMigrationV51(t *testing.T) {
 	if err := MigrateSchema(db); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Where("version IN ?", []int64{51, 52, 53}).Delete(&schemaMigration{}).Error; err != nil {
+	// 旧账本只到工作台迁移（记为 51），不包含之后新增的迁移。
+	if err := db.Where("version IN ?", []int64{51, 52, 53, 55}).Delete(&schemaMigration{}).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := db.Model(&schemaMigration{}).Where("version = ?", 54).Updates(map[string]any{

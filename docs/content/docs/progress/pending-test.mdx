@@ -5,6 +5,14 @@ description: 当前项目已实现功能的手工验证清单与未确认边界
 
 # 待测试
 
+## SQL 慢查询性能优化
+
+- 已实现：修复 SQLite 下 `whereTimeRange` 的 `unixepoch(created_at)` 包裹列导致索引失效；`ApiCallLog` 与 `Task` 新增 `CreatedAtEpoch` 列（`BeforeCreate` 从 `CreatedAt` 派生 Unix epoch）及 `idx_*_created_epoch` 索引，时间范围查询改走 epoch 裸列，migration v55 回填既有行。新增 `api_call_logs` 的 `(request_kind, status, created_at)` 和 `credit_ledger_entries` 的 `(user_id, type)` 复合索引。
+- 已实现：钱包 `CreditAccount` 改为先读后写，消除读路径上的写操作；`creditPolicy` 加 5 分钟 TTL 缓存，更新策略时失效。资源删除校验对 tasks/task_logs 大 JSON 加 LIKE 过滤（≤100 个资源 ID 时），避免全量拉取。模型目录可用性从 7 天趋势数据导出最近结果，消除第二次全表扫描并加 30 秒 TTL 缓存。
+- [x] 后端 `go test ./internal/database/ ./internal/model/ ./internal/repository/ ./internal/app/` 通过（`internal/app` 的 4 个 TempDir 清理失败为 Windows 预存问题，与本改动无关）。
+- [ ] 启动 SQLite 后端，访问 `GET /api/model-catalog`（原 11.8s）和 `GET /api/wallet`（原 2.5s），确认 `sql slow` 日志消失或显著减少。
+- [ ] 验证 migration v55 在空库和有数据的库上均成功执行；PostgreSQL 部署行为不变。
+
 ## 画布豆包音频节点参数与提示词说明
 
 - 已实现：音频节点参数面板可输入或清空豆包音色 ID；增加折叠的提示词写法、参考音频编号与正常语速说明，不新增当前协议未映射的语言、方言、声音指令控件。

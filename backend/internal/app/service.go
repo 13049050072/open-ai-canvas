@@ -95,6 +95,12 @@ type Service struct {
 	approvedMediaWg          sync.WaitGroup
 	approvedMediaWaiters     map[string]context.CancelFunc
 	approvedMediaClosed      bool
+	creditPolicyMu           sync.RWMutex
+	creditPolicyCache        *CreditPolicy
+	creditPolicyAt           time.Time
+	modelAvailabilityMu      sync.RWMutex
+	modelAvailabilityCache   map[publicModelAvailabilityKey]*PublicModelAvailability
+	modelAvailabilityAt      time.Time
 }
 
 const taskWorkerConcurrency = 3

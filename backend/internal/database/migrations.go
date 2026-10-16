@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const CurrentSchemaVersion int64 = 54
+const CurrentSchemaVersion int64 = 55
 
 const baselineSchemaChecksum = "sha256:open-ai-canvas-schema-v1-20260830"
 const schemaMigrationAppliedAtIndexChecksum = "sha256:schema-migrations-applied-at-index-v2-20260830"
@@ -184,6 +184,7 @@ var schemaMigrations = []migration{
 	{version: 54, name: workbenchToolsMigrationName, checksum: workbenchToolsMigrationChecksum, apply: func(tx *gorm.DB) error {
 		return tx.AutoMigrate(&model.WorkbenchTool{}, &model.WorkbenchPreset{}, &model.Task{})
 	}},
+	{version: 55, name: "sql_perf_indexes", checksum: "sha256:sql-perf-indexes-v55-20261016", apply: migrateSchemaV55},
 }
 
 func migratePrefixedIDSequenceReconcile(tx *gorm.DB) error {
@@ -553,6 +554,21 @@ func normalizeLegacyWorkbenchMigration(tx *gorm.DB) error {
 }
 
 const workbenchToolsMigrationVersion int64 = 54
+
+func migrateSchemaV55(tx *gorm.DB) error {
+	if err := tx.AutoMigrate(&model.ApiCallLog{}, &model.Task{}, &model.CreditLedgerEntry{}); err != nil {
+		return fmt.Errorf("迁移 SQL 性能索引：%w", err)
+	}
+	if tx.Dialector.Name() == "sqlite" {
+		if err := tx.Exec("UPDATE api_call_logs SET created_at_epoch = unixepoch(created_at) WHERE created_at_epoch = 0 OR created_at_epoch IS NULL").Error; err != nil {
+			return fmt.Errorf("回填 api_call_logs 时间戳：%w", err)
+		}
+		if err := tx.Exec("UPDATE tasks SET created_at_epoch = unixepoch(created_at) WHERE created_at_epoch = 0 OR created_at_epoch IS NULL").Error; err != nil {
+			return fmt.Errorf("回填 tasks 时间戳：%w", err)
+		}
+	}
+	return nil
+}
 
 func MigrateSchema(db *gorm.DB) error {
 	return db.Transaction(func(tx *gorm.DB) error {

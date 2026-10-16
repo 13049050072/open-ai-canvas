@@ -38,9 +38,7 @@ describe("画布 operations 生成", () => {
     test("没有taskId的普通metadata更新不增加任务前置条件", () => {
         const before = canvas({ nodes: [{ id: "video", type: "video", metadata: { prompt: "old" } }] as CanvasProject["nodes"] });
         const after = canvas({ nodes: [{ id: "video", type: "video", metadata: { prompt: "new" } }] as CanvasProject["nodes"] });
-        expect(buildCanvasOperations(before, after)).toEqual([
-            { type: "patch_node", id: "video", patch: { "metadata.prompt": "new" }, before: { "metadata.prompt": "old" } },
-        ]);
+        expect(buildCanvasOperations(before, after)).toEqual([{ type: "patch_node", id: "video", patch: { "metadata.prompt": "new" }, before: { "metadata.prompt": "old" } }]);
     });
 
     test("节点可选字段的 undefined 在 JSON 请求中保留为 null 基线和删除值", () => {

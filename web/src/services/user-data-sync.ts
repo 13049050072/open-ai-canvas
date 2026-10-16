@@ -950,7 +950,12 @@ export function buildCanvasOperations(base: CanvasProject | undefined, next: Can
             continue;
         }
         const diff = diffCanvasObject(previous as unknown as Record<string, unknown>, node as unknown as Record<string, unknown>);
-        if (Object.keys(diff.patch).length) operations.push({ type: "patch_node", id: node.id, patch: diff.patch, before: diff.previous });
+        if (Object.keys(diff.patch).length) {
+            if (Object.prototype.hasOwnProperty.call(diff.patch, "metadata.taskUpdatedAt") && typeof node.metadata?.taskId === "string" && node.metadata.taskId) {
+                diff.previous["metadata.taskId"] = node.metadata.taskId;
+            }
+            operations.push({ type: "patch_node", id: node.id, patch: diff.patch, before: diff.previous });
+        }
     }
     for (const node of base?.nodes || []) {
         if (!nextNodes.has(node.id)) operations.push({ type: "remove_node", id: node.id, expected: node });

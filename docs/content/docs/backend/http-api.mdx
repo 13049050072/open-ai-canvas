@@ -5,6 +5,12 @@ description: 信封、错误码与 OpenAPI
 
 # HTTP API 合同
 
+## 画布实时会话
+
+`GET /api/canvas-projects/:id/realtime` 使用登录 Cookie 升级为 WebSocket，握手校验当前用户对画布的归属和请求 Origin。首帧 `welcome` 提供服务端分配的 `selfId` 和窗口 Presence；客户端发送 `presence`，服务端推送 `peer`、`leave`、`invalidate` 和 `heartbeat`。Presence 只含有界世界坐标和拖拽矩形，不包含密钥、编辑租约 token、画布正文或实际保存指令。
+
+`invalidate` 在事务提交后发送，客户端通过 `GET /api/canvas-projects/:id/sync-status` 校验版本与租约，再按需读取正文；长连接不代表云端保存成功。正常且无活动 Agent 时每 30 秒补偿查询，断线或活动 Agent 期间使用原有轮询。未登录返回 401，画布缺失或不属于当前用户返回 404，不允许的来源返回 403，实时服务不可用返回 503。完整协议和部署边界见[画布操作同步](./canvas-operations-sync)。
+
 ## 视频工作台的生成模式
 
 `POST /api/workbench/tasks` 的视频任务根据已校验的 `references` 推导操作类型，客户端不需要提交泛化的 `video` 操作：

@@ -254,30 +254,29 @@ export async function loadCanvasProjectForEditing(id: string, options: { onLoad?
         if (dirty && !sameCanvasContent(local, remote)) {
             const live = requireUnchangedLocal(local, "画布仍在更新，未确认操作已保留");
             const baseline = pendingCanvasMutations.get(id)?.baseline ?? acknowledgedProjects.get(id);
-            if (!baseline && incrementalSession && !verifiedProjects.has(id)) {
-                const storage = localForageStorageForScope(scope);
-                const key = `yingce:canvas-unverified-recovery:${id}`;
-                const raw = await storage.getItem(key);
-                const previous: unknown = raw ? JSON.parse(raw) : [];
-                const copies = Array.isArray(previous) ? previous : [];
-                await storage.setItem(key, JSON.stringify([...copies.slice(-2), { project: live || local, savedAt: new Date().toISOString(), cloudRevision: remote.revision }]));
-            }
-            let projected: CanvasProject;
+            let merged: CanvasProject;
             try {
                 if (!baseline) {
-                    projected = { ...remote, title: local.title, nodes: [...remote.nodes, ...local.nodes.filter((node) => !remote.nodes.some((item) => item.id === node.id))], connections: [...remote.connections, ...local.connections.filter((connection) => !remote.connections.some((item) => item.id === connection.id))], viewport: local.viewport };
-                } else {
-                    // 未核对的旧缓存不是最新云端文档的编辑结果。保留恢复副本，
-                    // 再按会话原基线三方合并，避免把云端新增节点推导成 remove_node。
-                    if (!pendingCanvasMutations.get(id) && incrementalSession && !verifiedProjects.has(id) && !sameCanvasContent(baseline, remote) && baseline.remoteContentHash !== (await canvasContentHash(baseline))) {
+                    if (incrementalSession && !verifiedProjects.has(id)) {
                         const storage = localForageStorageForScope(scope);
                         const key = `yingce:canvas-unverified-recovery:${id}`;
                         const raw = await storage.getItem(key);
                         const previous: unknown = raw ? JSON.parse(raw) : [];
                         const copies = Array.isArray(previous) ? previous : [];
-                        await storage.setItem(key, JSON.stringify([...copies.slice(-2), { project: local, savedAt: new Date().toISOString(), cloudRevision: remote.revision }]));
+                        await storage.setItem(key, JSON.stringify([...copies.slice(-2), { project: live || local, savedAt: new Date().toISOString(), cloudRevision: remote.revision }]));
                     }
-                    projected = mergeAgentCanvasEditor(baseline, remote, live?.nodes || local.nodes, live?.connections || local.connections, live || local);
+                    const fallback = { ...remote, title: local.title, nodes: [...remote.nodes, ...local.nodes.filter((node) => !remote.nodes.some((item) => item.id === node.id))], connections: [...remote.connections, ...local.connections.filter((connection) => !remote.connections.some((item) => item.id === connection.id))], viewport: local.viewport };
+                    merged = { ...fallback, remoteContentHash: hash };
+                } else if (!pendingCanvasMutations.get(id) && incrementalSession && !verifiedProjects.has(id) && !sameCanvasContent(baseline, remote) && baseline.remoteContentHash !== (await canvasContentHash(baseline))) {
+                    const storage = localForageStorageForScope(scope);
+                    const key = `yingce:canvas-unverified-recovery:${id}`;
+                    const raw = await storage.getItem(key);
+                    const previous: unknown = raw ? JSON.parse(raw) : [];
+                    const copies = Array.isArray(previous) ? previous : [];
+                    await storage.setItem(key, JSON.stringify([...copies.slice(-2), { project: live || local, savedAt: new Date().toISOString(), cloudRevision: remote.revision }]));
+                    merged = { ...mergeAgentCanvasEditor(baseline, remote, live?.nodes || local.nodes, live?.connections || local.connections, live || local), remoteContentHash: hash };
+                } else {
+                    merged = { ...mergeAgentCanvasEditor(baseline, remote, live?.nodes || local.nodes, live?.connections || local.connections, live || local), remoteContentHash: hash };
                 }
             } catch (error) {
                 unbasedProjects.add(id);
@@ -285,22 +284,20 @@ export async function loadCanvasProjectForEditing(id: string, options: { onLoad?
                 throw error;
             }
             unbasedProjects.delete(id);
-            options.onLoad?.(projected);
-            useCanvasStore.setState((state) => ({ projects: state.projects.map((item) => (item.id === id ? projected : item)) }));
+            options.onLoad?.(merged);
+            useCanvasStore.setState((state) => ({ projects: state.projects.map((item) => (item.id === id ? merged : item)) }));
             acknowledgedProjects.set(id, { ...remote, remoteContentHash: hash });
             verifiedProjects.add(id);
             await flushCanvasStorePersistence();
             await persistConfirmedCanvasBaselines();
             useSyncProgressStore.getState().setProjectProgress(id, { phase: "pending", cloudRevision: remote.revision, pendingChanges: 1, message: "保留本地未确认操作，等待自动重放" });
             scheduleRemoteUserDataSync();
-            return projected;
+            return merged;
         }
         // Editing/generation may continue during the network request or draft write.
         // Viewport-only updates are not document edits and must not block adopting cloud content.
         const currentLive = requireUnchangedLocal(local, "画布仍在更新，已保留本地内容");
-        const project = { ...projected, viewport: currentLive?.viewport || local?.viewport || remote.viewport || { x: 0, y: 0, k: 1 }, remoteContentHash: hash };
-        // Align live editor refs synchronously before publishing the new revision.
-        // A generation callback must never see old rendered nodes paired with a new revision.
+        const project = { ...remote, viewport: currentLive?.viewport || local?.viewport || remote.viewport || { x: 0, y: 0, k: 1 }, remoteContentHash: hash };
         options.onLoad?.(project);
         acknowledgedProjects.set(id, { ...remote, viewport: project.viewport, remoteContentHash: hash });
         verifiedProjects.add(id);

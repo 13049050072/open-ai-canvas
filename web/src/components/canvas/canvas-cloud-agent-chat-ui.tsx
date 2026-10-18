@@ -146,9 +146,10 @@ export function parseCloudAgentFormAnswer(value: string): CloudAgentFormAnswer |
             questionId: typeof record.questionId === "string" ? record.questionId : undefined,
             answers,
             displayAnswers: formAnswerRecord(record.displayAnswers),
-            fieldTitles: record.fieldTitles && typeof record.fieldTitles === "object" && !Array.isArray(record.fieldTitles)
-                ? Object.fromEntries(Object.entries(record.fieldTitles).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
-                : undefined,
+            fieldTitles:
+                record.fieldTitles && typeof record.fieldTitles === "object" && !Array.isArray(record.fieldTitles)
+                    ? Object.fromEntries(Object.entries(record.fieldTitles).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
+                    : undefined,
             skippedFields: Array.isArray(record.skippedFields) ? record.skippedFields.filter((item): item is string => typeof item === "string") : [],
             useRecommendedDefaults: record.useRecommendedDefaults === true,
             additionalNotes: typeof record.additionalNotes === "string" ? record.additionalNotes : undefined,
@@ -168,7 +169,7 @@ function agentFormValueLabel(value: string) {
 
 function AgentFormAnswerCard({ answer, theme }: { answer: CloudAgentFormAnswer; theme: (typeof canvasThemes)[keyof typeof canvasThemes] }) {
     const values = answer.displayAnswers && Object.keys(answer.displayAnswers).length ? answer.displayAnswers : answer.answers;
-    const entries = Object.entries(values).filter(([, value]) => Array.isArray(value) ? value.length > 0 : value.trim());
+    const entries = Object.entries(values).filter(([, value]) => (Array.isArray(value) ? value.length > 0 : value.trim()));
     return (
         <div className="agent-form-answer-card" style={{ color: theme.node.text }}>
             <div className="agent-form-answer-heading">已确认创作方向</div>
@@ -181,10 +182,18 @@ function AgentFormAnswerCard({ answer, theme }: { answer: CloudAgentFormAnswer; 
                             <span className="agent-form-answer-value">{answer.displayAnswers?.[key] || (Array.isArray(value) ? value.map(agentFormValueLabel).join("、") : agentFormValueLabel(value))}</span>
                         </div>
                     ))}
-                    {answer.additionalNotes ? <div className="agent-form-answer-row"><span className="agent-form-answer-label">补充说明</span><span className="agent-form-answer-value">{answer.additionalNotes}</span></div> : null}
+                    {answer.additionalNotes ? (
+                        <div className="agent-form-answer-row">
+                            <span className="agent-form-answer-label">补充说明</span>
+                            <span className="agent-form-answer-value">{answer.additionalNotes}</span>
+                        </div>
+                    ) : null}
                 </div>
             ) : answer.additionalNotes ? (
-                <div className="agent-form-answer-row"><span className="agent-form-answer-label">补充说明</span><span className="agent-form-answer-value">{answer.additionalNotes}</span></div>
+                <div className="agent-form-answer-row">
+                    <span className="agent-form-answer-label">补充说明</span>
+                    <span className="agent-form-answer-value">{answer.additionalNotes}</span>
+                </div>
             ) : (
                 <div className="agent-form-answer-note">已确认，按推荐方案继续</div>
             )}
@@ -592,15 +601,7 @@ function useTypewriterText(targetText: string, shouldAnimate: boolean) {
             // Normal output remains visibly animated. Once stream chunks start
             // outrunning the renderer, increase the batch instead of queuing
             // every code point behind a fixed 16ms delay.
-            const revealCount = pendingCharacters > 384
-                ? pendingCharacters
-                : pendingCharacters > 192
-                    ? 32
-                    : pendingCharacters > 96
-                        ? 16
-                        : pendingCharacters > 24
-                            ? 8
-                            : 3;
+            const revealCount = pendingCharacters > 384 ? pendingCharacters : pendingCharacters > 192 ? 32 : pendingCharacters > 96 ? 16 : pendingCharacters > 24 ? 8 : 3;
             const nextText = targetCharacters.slice(0, currentCharacters.length + revealCount).join("");
             visibleRef.current = nextText;
             setVisibleText(nextText);
@@ -1091,7 +1092,7 @@ export function AgentQuestionBar({ question, theme, onAnswer, disabled = false }
     const updateValue = (field: CloudAgentFormField, value: string) => {
         setValues((current) => {
             if (field.type !== "multi_select") return { ...current, [field.id]: value };
-            const selected = Array.isArray(current[field.id]) ? current[field.id] as string[] : [];
+            const selected = Array.isArray(current[field.id]) ? (current[field.id] as string[]) : [];
             return { ...current, [field.id]: selected.includes(value) ? selected.filter((item) => item !== value) : [...selected, value] };
         });
         if (field.allowCustom && value === "other") setCustomFields((current) => ({ ...current, [field.id]: true }));
@@ -1187,7 +1188,9 @@ export function AgentQuestionBar({ question, theme, onAnswer, disabled = false }
                     })}
                 </div>
                 <div className="agent-question-field px-3 pb-2">
-                    <label className="agent-question-field-label" htmlFor="agent-question-additional-notes">补充说明</label>
+                    <label className="agent-question-field-label" htmlFor="agent-question-additional-notes">
+                        补充说明
+                    </label>
                     <textarea
                         id="agent-question-additional-notes"
                         rows={2}

@@ -212,7 +212,9 @@ export function applyAgentEvent(
                   .map((field) => ({
                       id: String(field.id || "").trim(),
                       title: String(field.title || field.label || "").trim(),
-                      type: ["single_select", "multi_select", "segmented", "text", "textarea", "model_picker"].includes(String(field.type)) ? (String(field.type) as "single_select" | "multi_select" | "segmented" | "text" | "textarea" | "model_picker") : "single_select",
+                      type: ["single_select", "multi_select", "segmented", "text", "textarea", "model_picker"].includes(String(field.type))
+                          ? (String(field.type) as "single_select" | "multi_select" | "segmented" | "text" | "textarea" | "model_picker")
+                          : "single_select",
                       options: Array.isArray(field.options)
                           ? (field.options as Array<Record<string, unknown>>)
                                 .map((option) => ({

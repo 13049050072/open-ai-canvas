@@ -174,6 +174,7 @@ export function CanvasAppearanceEditor({ value, onChange, disabled, onUploading 
                         </div>
                         <div className="grid gap-3 border-t border-border pt-3">
                             <Radio.Group
+                                className="flex flex-wrap"
                                 optionType="button"
                                 value={selectedAvatarState}
                                 disabled={disabled || uploading}

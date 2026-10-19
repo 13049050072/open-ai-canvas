@@ -29,8 +29,8 @@ func defaultCanvasAppearance() CanvasAppearance {
 		InputPlaceholder:   "输入操作指导；用 @ 引用画布节点，用 / 或 、 引用 Skills",
 		AvatarType:         "bundle",
 		AvatarClipStates: map[string]string{
-			"idle": "idle", "running": "working_loop", "waiting_approval": "think",
-			"completed": "wave", "failed": "wipe_sweat",
+			"idle": "idle", "queued": "sleep_loop", "running": "working_loop", "waiting_approval": "think",
+			"completed": "wave", "failed": "wipe_sweat", "cancelled": "lie_down", "rejected": "think",
 		},
 		AvatarHeight: 220,
 	}
@@ -95,7 +95,7 @@ func isEmptyCanvasAppearance(value CanvasAppearance) bool {
 
 func validAvatarState(state string) bool {
 	switch state {
-	case "idle", "running", "waiting_approval", "completed", "failed":
+	case "idle", "queued", "running", "waiting_approval", "completed", "failed", "cancelled", "rejected":
 		return true
 	default:
 		return false

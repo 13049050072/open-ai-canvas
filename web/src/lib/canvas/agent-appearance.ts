@@ -13,13 +13,16 @@ export type CanvasAppearance = {
     avatarHeight: number;
 };
 
-export type AgentAvatarState = "idle" | "running" | "waiting_approval" | "completed" | "failed";
+export type AgentAvatarState = "idle" | "queued" | "running" | "waiting_approval" | "completed" | "failed" | "cancelled" | "rejected";
 export const AGENT_AVATAR_STATES: { id: AgentAvatarState; label: string }[] = [
     { id: "idle", label: "待命" },
+    { id: "queued", label: "排队中" },
     { id: "running", label: "运行中" },
     { id: "waiting_approval", label: "等待审批" },
     { id: "completed", label: "已完成" },
     { id: "failed", label: "异常" },
+    { id: "cancelled", label: "已停止" },
+    { id: "rejected", label: "已拒绝" },
 ];
 
 export type AgentAvatarBundleManifest = {
@@ -31,10 +34,13 @@ export type AgentAvatarBundleManifest = {
 
 export const DEFAULT_AGENT_AVATAR_CLIP_STATES: Record<AgentAvatarState, string> = {
     idle: "idle",
+    queued: "sleep_loop",
     running: "working_loop",
     waiting_approval: "think",
     completed: "wave",
     failed: "wipe_sweat",
+    cancelled: "lie_down",
+    rejected: "think",
 };
 
 export function isAgentAvatarBundleManifest(value: unknown): value is AgentAvatarBundleManifest {
@@ -57,16 +63,23 @@ export function agentAvatarClipForState(appearance: CanvasAppearance, state: Age
     return Object.keys(manifest.clips)[0] ?? "";
 }
 
+export function agentAvatarStateForRunStatus(status: string): AgentAvatarState {
+    return AGENT_AVATAR_STATES.some((state) => state.id === status) ? (status as AgentAvatarState) : "idle";
+}
+
 export function suggestedAgentAvatarClipStates(manifest: AgentAvatarBundleManifest): Record<AgentAvatarState, string> {
     const byNormalizedName = new Map(Object.keys(manifest.clips).map((clip) => [clip.toLowerCase().replace(/[^a-z0-9]/g, ""), clip]));
     const fallback = Object.keys(manifest.clips)[0] ?? "";
     const suggest = (candidates: string[]) => candidates.map((name) => byNormalizedName.get(name)).find(Boolean) || (manifest.clips.idle ? "idle" : fallback);
     return {
         idle: suggest(["idle", "idleloop"]),
+        queued: suggest(["queued", "pending", "sleeploop", "sleep", "think", "idle"]),
         running: suggest(["workingloop", "runningloop", "working", "running", "workstart", "work"]),
         waiting_approval: suggest(["think", "thinking", "waiting", "wait", "idle"]),
         completed: suggest(["wave", "celebrate", "completed", "complete", "jump"]),
         failed: suggest(["wipesweat", "failed", "failure", "error", "think"]),
+        cancelled: suggest(["cancelled", "canceled", "liedown", "sleep", "idle"]),
+        rejected: suggest(["rejected", "think", "wipesweat", "idle"]),
     };
 }
 
@@ -83,10 +96,13 @@ export const DEFAULT_CANVAS_APPEARANCE: CanvasAppearance = {
     avatarBundleResourceId: "",
     avatarClipStates: {
         idle: "idle",
+        queued: "sleep_loop",
         running: "working_loop",
         waiting_approval: "think",
         completed: "wave",
         failed: "wipe_sweat",
+        cancelled: "lie_down",
+        rejected: "think",
     },
     avatarHeight: 220,
 };

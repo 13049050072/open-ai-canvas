@@ -3,6 +3,7 @@ package app
 import (
 	"archive/zip"
 	"bytes"
+	"reflect"
 	"testing"
 
 	"yingce/backend/internal/model"
@@ -78,7 +79,11 @@ func TestDefaultCanvasAppearanceUsesBuiltInAvatarBundle(t *testing.T) {
 	if value.AvatarType != "bundle" || value.AvatarBundleResourceID != "" {
 		t.Fatalf("default canvas appearance = %+v, want built-in avatar bundle", value)
 	}
-	if value.AvatarClipStates["idle"] != "idle" || value.AvatarClipStates["running"] != "working_loop" || value.AvatarClipStates["waiting_approval"] != "think" || value.AvatarClipStates["completed"] != "wave" || value.AvatarClipStates["failed"] != "wipe_sweat" {
+	wantStates := map[string]string{
+		"idle": "idle", "queued": "sleep_loop", "running": "working_loop", "waiting_approval": "think",
+		"completed": "wave", "failed": "wipe_sweat", "cancelled": "lie_down", "rejected": "think",
+	}
+	if !reflect.DeepEqual(value.AvatarClipStates, wantStates) {
 		t.Fatalf("default clip mapping = %#v", value.AvatarClipStates)
 	}
 	if _, err := normalizeCanvasAppearance(value); err != nil {

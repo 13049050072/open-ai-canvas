@@ -5,7 +5,7 @@
 
 import type { CanvasTheme } from "@/lib/canvas-theme";
 import { useAppearanceStore } from "@/stores/use-appearance-store";
-import { agentAvatarClipForState, agentCopy, DEFAULT_CANVAS_APPEARANCE, isAgentAvatarBundleManifest, type AgentAvatarBundleManifest, type AgentAvatarState } from "@/lib/canvas/agent-appearance";
+import { agentAvatarClipForState, agentAvatarStateForRunStatus, agentCopy, DEFAULT_CANVAS_APPEARANCE, isAgentAvatarBundleManifest, type AgentAvatarBundleManifest } from "@/lib/canvas/agent-appearance";
 import { type CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAgentLauncherPosition } from "./use-agent-launcher-position";
 import { motion } from "motion/react";
@@ -41,14 +41,14 @@ export function AgentLauncher({ theme, statusColor, approvalPending, reducedMoti
     const appearanceResolved = useAppearanceStore((state) => state.resolved);
     const appearanceRevision = useAppearanceStore((state) => state.appearance.revision);
     const live = appearance.avatarType === "live2d" && Boolean(appearance.live2dResourceId && appearance.live2dEntry);
-    const avatarState: AgentAvatarState = status === "running" || status === "queued" ? "running" : status === "waiting_approval" ? "waiting_approval" : status === "completed" ? "completed" : status === "failed" || status === "cancelled" || status === "rejected" ? "failed" : "idle";
+    const avatarState = agentAvatarStateForRunStatus(status);
     const bundleManifestURL = appearance.avatarBundleResourceId
         ? agentAvatarBundleFileURL(appearance.avatarBundleResourceId, "avatar.json", false, appearanceRevision)
         : "/doll/avatar.json";
-    const [bundleManifest, setBundleManifest] = useState<AgentAvatarBundleManifest | null>(null);
+    const [bundleManifestState, setBundleManifestState] = useState<{ url: string; manifest: AgentAvatarBundleManifest | null } | null>(null);
     useEffect(() => {
         if (appearance.avatarType !== "bundle") {
-            setBundleManifest(null);
+            setBundleManifestState(null);
             return;
         }
         const controller = new AbortController();
@@ -58,13 +58,16 @@ export function AgentLauncher({ theme, statusColor, approvalPending, reducedMoti
                 if (!response.ok) throw new Error(`无法读取 Agent 动画包（HTTP ${response.status}）`);
                 const manifest: unknown = await response.json();
                 if (!isAgentAvatarBundleManifest(manifest)) throw new Error("avatar.json 格式无效");
-                setBundleManifest(manifest);
+                setBundleManifestState({ url: bundleManifestURL, manifest });
             } catch {
-                if (!controller.signal.aborted) setBundleManifest(null);
+                if (!controller.signal.aborted) setBundleManifestState({ url: bundleManifestURL, manifest: null });
             }
         })();
         return () => controller.abort();
     }, [appearance.avatarType, bundleManifestURL]);
+    const currentBundleManifestState = bundleManifestState?.url === bundleManifestURL ? bundleManifestState : null;
+    const bundleManifest = currentBundleManifestState?.manifest ?? null;
+    const bundleManifestLoading = appearance.avatarType === "bundle" && currentBundleManifestState === null;
     const clip = bundleManifest ? agentAvatarClipForState(appearance, avatarState, bundleManifest) : "";
     const clipFile = bundleManifest?.clips[clip] || "";
     const mediaURL = appearance.avatarType === "bundle" && clipFile
@@ -82,9 +85,10 @@ export function AgentLauncher({ theme, statusColor, approvalPending, reducedMoti
         return () => window.removeEventListener("resize", resize);
     }, []);
     const media = Boolean(mediaURL && !mediaError);
-    const aspectRatio = live ? 0.75 : bundleManifest ? bundleManifest.width / bundleManifest.height : 1;
-    const height = live || media ? Math.max(40, Math.min(appearance.avatarHeight, viewport.height - 60, (viewport.width - 40) / aspectRatio)) : 76;
-    const width = live ? Math.round(height * aspectRatio) : media ? Math.round(height * aspectRatio) : 76;
+    const aspectRatio = live ? 0.75 : bundleManifest ? bundleManifest.width / bundleManifest.height : appearance.avatarType === "bundle" ? 480 / 432 : 1;
+    const keepsAvatarSize = live || media || bundleManifestLoading;
+    const height = keepsAvatarSize ? Math.max(40, Math.min(appearance.avatarHeight, viewport.height - 60, (viewport.width - 40) / aspectRatio)) : 76;
+    const width = keepsAvatarSize ? Math.round(height * aspectRatio) : 76;
     const { position, dragging, handlers } = useAgentLauncherPosition(onOpen, width, height);
     return (
         <motion.button
@@ -113,14 +117,14 @@ export function AgentLauncher({ theme, statusColor, approvalPending, reducedMoti
                     onError={setLive2DError}
                 />
             ) : mediaURL && !mediaError ? (
-                <AgentAvatarVideo src={mediaURL} loop={!["completed", "failed"].includes(avatarState)} onError={() => setMediaError(true)} />
-            ) : appearanceResolved ? (
-                <FluidOrb size={60} color="#7164f6" />
-            ) : (
+                <AgentAvatarVideo src={mediaURL} loop={!["completed", "failed", "cancelled", "rejected"].includes(avatarState)} onError={() => setMediaError(true)} />
+            ) : bundleManifestLoading || !appearanceResolved ? (
                 <span role="status" aria-busy="true">
                     <LoaderCircle className={reducedMotion ? "size-6" : "size-6 motion-safe:animate-spin"} aria-hidden="true" />
                     <span className="sr-only">正在加载助手形象</span>
                 </span>
+            ) : (
+                <FluidOrb size={60} color="#7164f6" />
             )}
             {appearance.launcherLabel ? <span className="canvas-agent-launcher-label">{appearance.launcherLabel}</span> : null}
             {live && live2DError ? (

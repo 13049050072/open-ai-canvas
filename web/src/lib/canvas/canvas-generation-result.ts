@@ -1,9 +1,21 @@
 import type { CanvasNodeData, CanvasNodeMetadata } from "@/types/canvas";
 
 const completedTaskObservationKeys = [
-    "status", "taskStatus", "taskProgress", "taskStage", "taskMediaStage", "taskCanRecoverMedia",
-    "taskStartedAt", "taskCompletedAt", "taskDurationMs", "taskCreatedAt", "taskUpdatedAt",
-    "errorDetails", "generationErrorCode", "failedPromptFingerprint", "resourceReloadAvailable",
+    "status",
+    "taskStatus",
+    "taskProgress",
+    "taskStage",
+    "taskMediaStage",
+    "taskCanRecoverMedia",
+    "taskStartedAt",
+    "taskCompletedAt",
+    "taskDurationMs",
+    "taskCreatedAt",
+    "taskUpdatedAt",
+    "errorDetails",
+    "generationErrorCode",
+    "failedPromptFingerprint",
+    "resourceReloadAvailable",
 ] as const satisfies readonly (keyof CanvasNodeMetadata)[];
 
 export function completedGenerationObservationBase(baseNodes: CanvasNodeData[], resultNodes: CanvasNodeData[], durableNodes: CanvasNodeData[], taskId: string, effectKey: string): CanvasNodeData[] {
@@ -12,9 +24,7 @@ export function completedGenerationObservationBase(baseNodes: CanvasNodeData[], 
     return baseNodes.map((base) => {
         const result = results.get(base.id);
         const saved = durable.get(base.id);
-        if (!saved || base.metadata?.taskId !== taskId || result?.metadata?.taskId !== taskId
-            || result.metadata.taskStatus !== "succeeded" || result.metadata.status !== "success"
-            || !result.metadata.generationEffectKeys?.includes(effectKey)) return base;
+        if (!saved || base.metadata?.taskId !== taskId || result?.metadata?.taskId !== taskId || result.metadata.taskStatus !== "succeeded" || result.metadata.status !== "success" || !result.metadata.generationEffectKeys?.includes(effectKey)) return base;
         if (saved.metadata?.taskId !== taskId) throw new Error("节点已绑定其他生成任务，旧任务结果不能覆盖当前节点");
         // UI recovery/polling can lead durable state. Only observations of this completed task
         // use the latest saved baseline; prompt, media, geometry and task identity remain fenced.

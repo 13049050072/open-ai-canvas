@@ -5,20 +5,37 @@ import type { CanvasProject } from "@/stores/canvas/use-canvas-store";
 import { CanvasNodeType, type CanvasNodeData } from "@/types/canvas";
 
 const base: CanvasNodeData = {
-    id: "video", type: CanvasNodeType.Video, title: "Video", position: { x: 0, y: 0 }, width: 320, height: 180,
+    id: "video",
+    type: CanvasNodeType.Video,
+    title: "Video",
+    position: { x: 0, y: 0 },
+    width: 320,
+    height: 180,
     metadata: { taskId: "task", status: "loading", taskStage: "reload", prompt: "original", content: "old" },
 };
 const result: CanvasNodeData = { ...base, metadata: { ...base.metadata, status: "success", taskStatus: "succeeded", content: "generated", generationEffectKeys: ["effect"] } };
 const saved: CanvasNodeData = { ...base, metadata: { ...base.metadata, status: "error", taskStage: "failed", errorDetails: "previous failure" } };
 const project = (nodes: CanvasNodeData[]): CanvasProject => ({
-    id: "canvas", revision: 1, title: "Canvas", createdAt: "", updatedAt: "", nodes, connections: [], chatSessions: [], activeChatId: null,
-    backgroundMode: "dots", showImageInfo: false, viewport: { x: 0, y: 0, k: 1 }, previsScenes: [],
+    id: "canvas",
+    revision: 1,
+    title: "Canvas",
+    createdAt: "",
+    updatedAt: "",
+    nodes,
+    connections: [],
+    chatSessions: [],
+    activeChatId: null,
+    backgroundMode: "dots",
+    showImageInfo: false,
+    viewport: { x: 0, y: 0, k: 1 },
+    previsScenes: [],
 });
 function rebase(durableNodes: CanvasNodeData[], local = result) {
     const document = parseCanvasStorageDocument(null, [project(durableNodes)]);
     if (!durableNodes.length) document.tombstones.nodes.canvas = { video: 2 };
     return rebaseCanvasProjects({
-        document, baseRevision: 1,
+        document,
+        baseRevision: 1,
         baseProjects: [project(completedGenerationObservationBase([base], [local], durableNodes, "task", "effect"))],
         localProjects: [project([local])],
     });
@@ -61,7 +78,10 @@ test("unrelated user edits and newly saved nodes survive completed task recovery
 });
 
 test("unfinished tasks and results without the matching effect retain strict conflict checks", () => {
-    for (const metadata of [{ ...result.metadata, taskStatus: "running" as const }, { ...result.metadata, generationEffectKeys: [] }]) {
+    for (const metadata of [
+        { ...result.metadata, taskStatus: "running" as const },
+        { ...result.metadata, generationEffectKeys: [] },
+    ]) {
         expect(rebase([saved], { ...result, metadata }).conflicts.length).toBeGreaterThan(0);
     }
 });

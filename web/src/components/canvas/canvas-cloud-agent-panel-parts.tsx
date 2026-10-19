@@ -36,15 +36,29 @@ import type { ApprovalState } from "./canvas-cloud-agent-events";
 
 // hidden 为 true 时入口保持挂载但不显示：Live2D 模型加载开销大，面板开合不能卸载它，
 // 否则每次重新挂载都要重新下载模型并重建渲染上下文。
-export function AgentLauncher({ theme, statusColor, approvalPending, reducedMotion, status, hidden = false, onOpen }: { theme: CanvasTheme; statusColor: string; approvalPending: boolean; reducedMotion: boolean; status: string; hidden?: boolean; onOpen: () => void }) {
+export function AgentLauncher({
+    theme,
+    statusColor,
+    approvalPending,
+    reducedMotion,
+    status,
+    hidden = false,
+    onOpen,
+}: {
+    theme: CanvasTheme;
+    statusColor: string;
+    approvalPending: boolean;
+    reducedMotion: boolean;
+    status: string;
+    hidden?: boolean;
+    onOpen: () => void;
+}) {
     const appearance = useAppearanceStore((state) => state.appearance.canvas) || DEFAULT_CANVAS_APPEARANCE;
     const appearanceResolved = useAppearanceStore((state) => state.resolved);
     const appearanceRevision = useAppearanceStore((state) => state.appearance.revision);
     const live = appearance.avatarType === "live2d" && Boolean(appearance.live2dResourceId && appearance.live2dEntry);
     const avatarState = agentAvatarStateForRunStatus(status);
-    const bundleManifestURL = appearance.avatarBundleResourceId
-        ? agentAvatarBundleFileURL(appearance.avatarBundleResourceId, "avatar.json", false, appearanceRevision)
-        : "/doll/avatar.json";
+    const bundleManifestURL = appearance.avatarBundleResourceId ? agentAvatarBundleFileURL(appearance.avatarBundleResourceId, "avatar.json", false, appearanceRevision) : "/doll/avatar.json";
     const [bundleManifestState, setBundleManifestState] = useState<{ url: string; manifest: AgentAvatarBundleManifest | null } | null>(null);
     useEffect(() => {
         if (appearance.avatarType !== "bundle") {
@@ -70,11 +84,7 @@ export function AgentLauncher({ theme, statusColor, approvalPending, reducedMoti
     const bundleManifestLoading = appearance.avatarType === "bundle" && currentBundleManifestState === null;
     const clip = bundleManifest ? agentAvatarClipForState(appearance, avatarState, bundleManifest) : "";
     const clipFile = bundleManifest?.clips[clip] || "";
-    const mediaURL = appearance.avatarType === "bundle" && clipFile
-        ? appearance.avatarBundleResourceId
-            ? agentAvatarBundleFileURL(appearance.avatarBundleResourceId, clipFile, false, appearanceRevision)
-            : `/doll/${encodeURIComponent(clipFile)}`
-        : "";
+    const mediaURL = appearance.avatarType === "bundle" && clipFile ? (appearance.avatarBundleResourceId ? agentAvatarBundleFileURL(appearance.avatarBundleResourceId, clipFile, false, appearanceRevision) : `/doll/${encodeURIComponent(clipFile)}`) : "";
     const [mediaError, setMediaError] = useState(false);
     useEffect(() => setMediaError(false), [mediaURL]);
     const [live2DError, setLive2DError] = useState("");
@@ -95,7 +105,12 @@ export function AgentLauncher({ theme, statusColor, approvalPending, reducedMoti
             type="button"
             aria-label={`打开${appearance.agentName}`}
             title={live && live2DError ? live2DError : `${approvalPending ? "Agent 等待你的审批" : "打开 Agent 助手"} · 拖动可调整位置，聚焦后可用方向键移动`}
-            className={cn("canvas-agent-launcher fixed z-[calc(var(--z-toast)+1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/35", dragging && "is-dragging", live && "canvas-agent-launcher-live2d", mediaURL && !mediaError && "canvas-agent-launcher-media")}
+            className={cn(
+                "canvas-agent-launcher fixed z-[calc(var(--z-toast)+1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/35",
+                dragging && "is-dragging",
+                live && "canvas-agent-launcher-live2d",
+                mediaURL && !mediaError && "canvas-agent-launcher-media",
+            )}
             style={{ ...position, width, height, color: theme.node.text, "--canvas-agent-launcher-shadow": theme.spatial.shadow, ...(hidden ? { display: "none" } : null) } as CSSProperties}
             aria-hidden={hidden || undefined}
             tabIndex={hidden ? -1 : undefined}

@@ -4,7 +4,17 @@ import { ExternalLink, Upload } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { Live2DAvatar } from "@/components/canvas/live2d-avatar";
 import { FluidOrb } from "@/components/ui/fluid-orb";
-import { AGENT_AVATAR_STATES, DEFAULT_AGENT_AVATAR_CLIP_STATES, agentAvatarClipForState, agentCopy, isAgentAvatarBundleManifest, suggestedAgentAvatarClipStates, type AgentAvatarBundleManifest, type AgentAvatarState, type CanvasAppearance } from "@/lib/canvas/agent-appearance";
+import {
+    AGENT_AVATAR_STATES,
+    DEFAULT_AGENT_AVATAR_CLIP_STATES,
+    agentAvatarClipForState,
+    agentCopy,
+    isAgentAvatarBundleManifest,
+    suggestedAgentAvatarClipStates,
+    type AgentAvatarBundleManifest,
+    type AgentAvatarState,
+    type CanvasAppearance,
+} from "@/lib/canvas/agent-appearance";
 import { agentAvatarBundleFileURL, live2DModelURL, uploadAgentAvatarBundle, uploadLive2D } from "@/services/api/appearance";
 import { AgentAvatarVideo } from "@/components/canvas/agent-avatar-video";
 
@@ -26,11 +36,7 @@ export function CanvasAppearanceEditor({ value, onChange, disabled, onUploading 
     const bundleManifestURL = bundleID ? agentAvatarBundleFileURL(bundleID, "avatar.json", true) : "/doll/avatar.json";
     const previewClip = bundleManifest ? agentAvatarClipForState(value, selectedAvatarState, bundleManifest) : "";
     const previewFile = bundleManifest?.clips[previewClip] || "";
-    const previewBundleURL = previewFile
-        ? bundleID
-            ? agentAvatarBundleFileURL(bundleID, previewFile, true)
-            : `/doll/${encodeURIComponent(previewFile)}`
-        : "";
+    const previewBundleURL = previewFile ? (bundleID ? agentAvatarBundleFileURL(bundleID, previewFile, true) : `/doll/${encodeURIComponent(previewFile)}`) : "";
     const change = (patch: Partial<CanvasAppearance>) => onChange({ ...value, ...patch });
     useEffect(() => {
         if (value.avatarType !== "bundle") return;
@@ -134,12 +140,12 @@ export function CanvasAppearanceEditor({ value, onChange, disabled, onUploading 
                     ]}
                     onChange={(event) => {
                         const type = event.target.value;
-                        change(type === "bundle"
-                            ? { avatarType: type, avatarClipStates: value.avatarClipStates || DEFAULT_AGENT_AVATAR_CLIP_STATES }
-                            : { avatarType: type });
+                        change(type === "bundle" ? { avatarType: type, avatarClipStates: value.avatarClipStates || DEFAULT_AGENT_AVATAR_CLIP_STATES } : { avatarType: type });
                     }}
                 />
-                {value.avatarType === "live2d" ? <p className="text-sm text-foreground/60">上传有授权的 Cubism 3/4 运行时 ZIP：一个 model3.json、moc3、PNG 纹理及可选动作/表情 JSON。首期不支持音频、旧版模型和编辑工程。模型会发送到浏览器，无法保证防下载。</p> : null}
+                {value.avatarType === "live2d" ? (
+                    <p className="text-sm text-foreground/60">上传有授权的 Cubism 3/4 运行时 ZIP：一个 model3.json、moc3、PNG 纹理及可选动作/表情 JSON。首期不支持音频、旧版模型和编辑工程。模型会发送到浏览器，无法保证防下载。</p>
+                ) : null}
                 {value.avatarType === "bundle" ? (
                     <div className="grid gap-3">
                         <input
@@ -189,10 +195,12 @@ export function CanvasAppearanceEditor({ value, onChange, disabled, onUploading 
                                     disabled={disabled || uploading || !bundleManifest}
                                     loading={bundleLoading}
                                     options={Object.entries(bundleManifest?.clips ?? {}).map(([clip, file]) => ({ label: `${clip} · ${file}`, value: clip }))}
-                                    onChange={(clip) => change({
-                                        avatarType: "bundle",
-                                        avatarClipStates: { ...value.avatarClipStates, [selectedAvatarState]: clip },
-                                    })}
+                                    onChange={(clip) =>
+                                        change({
+                                            avatarType: "bundle",
+                                            avatarClipStates: { ...value.avatarClipStates, [selectedAvatarState]: clip },
+                                        })
+                                    }
                                 />
                             </label>
                         </div>
@@ -207,7 +215,11 @@ export function CanvasAppearanceEditor({ value, onChange, disabled, onUploading 
                                 showIcon
                                 title="动画包预览失败"
                                 description={bundleError}
-                                action={<Button size="small" onClick={() => setAttempt((current) => current + 1)}>重试</Button>}
+                                action={
+                                    <Button size="small" onClick={() => setAttempt((current) => current + 1)}>
+                                        重试
+                                    </Button>
+                                }
                             />
                         ) : null}
                     </div>

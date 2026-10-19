@@ -73,12 +73,7 @@ export function AgentAvatarVideo({ src, loop = true, onError, className }: { src
 
     return (
         <>
-            <canvas
-                ref={canvasRef}
-                className={className ?? "canvas-agent-keyed-video"}
-                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", pointerEvents: "none", userSelect: "none" }}
-                aria-hidden="true"
-            />
+            <canvas ref={canvasRef} className={className ?? "canvas-agent-keyed-video"} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", pointerEvents: "none", userSelect: "none" }} aria-hidden="true" />
             <video
                 ref={videoRef}
                 src={src}

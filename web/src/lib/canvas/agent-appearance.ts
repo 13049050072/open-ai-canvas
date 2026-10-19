@@ -51,9 +51,7 @@ export function isAgentAvatarBundleManifest(value: unknown): value is AgentAvata
     const height = Number(manifest.height);
     if (width < 1 || width > 4096 || height < 1 || height > 4096 || typeof manifest.clips !== "object" || manifest.clips === null) return false;
     const clips = manifest.clips as Record<string, unknown>;
-    return Object.keys(clips).length > 0 && Object.keys(clips).length <= 64 && Object.entries(clips).every(
-        ([id, file]) => /^[A-Za-z0-9_-]{1,64}$/.test(id) && typeof file === "string" && /^[A-Za-z0-9._-]{1,124}\.mp4$/i.test(file),
-    );
+    return Object.keys(clips).length > 0 && Object.keys(clips).length <= 64 && Object.entries(clips).every(([id, file]) => /^[A-Za-z0-9_-]{1,64}$/.test(id) && typeof file === "string" && /^[A-Za-z0-9._-]{1,124}\.mp4$/i.test(file));
 }
 
 export function agentAvatarClipForState(appearance: CanvasAppearance, state: AgentAvatarState, manifest: AgentAvatarBundleManifest) {

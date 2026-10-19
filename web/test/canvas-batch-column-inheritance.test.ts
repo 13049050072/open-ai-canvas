@@ -47,7 +47,10 @@ test("AI-generated task rows do not grow when a reference column has more inputs
     const next = syncBatchColumnReferences(f.nodes, edges);
     expect(rows(next)).toHaveLength(2);
     expect(rows(next).map((row) => row.id)).toEqual(["row0", "row1"]);
-    expect(rows(next).map((row) => row.inputNodeIds)).toEqual([["person", "outfit"], ["other", "outfit"]]);
+    expect(rows(next).map((row) => row.inputNodeIds)).toEqual([
+        ["person", "outfit"],
+        ["other", "outfit"],
+    ]);
     expect(rows(next).map((row) => row.prompt)).toEqual(["prompt 0", "prompt 1"]);
     expect(rows(next).map((row) => row.outputNodeId)).toEqual(["result0", "result1"]);
 });

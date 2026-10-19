@@ -5,13 +5,14 @@
 
 import type { CanvasTheme } from "@/lib/canvas-theme";
 import { useAppearanceStore } from "@/stores/use-appearance-store";
-import { agentCopy, DEFAULT_CANVAS_APPEARANCE } from "@/lib/canvas/agent-appearance";
+import { agentAvatarClipForState, agentCopy, DEFAULT_CANVAS_APPEARANCE, isAgentAvatarBundleManifest, type AgentAvatarBundleManifest, type AgentAvatarState } from "@/lib/canvas/agent-appearance";
 import { type CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAgentLauncherPosition } from "./use-agent-launcher-position";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Live2DAvatar } from "./live2d-avatar";
-import { live2DModelURL } from "@/services/api/appearance";
+import { agentAvatarBundleFileURL, live2DModelURL } from "@/services/api/appearance";
+import { AgentAvatarVideo } from "@/components/canvas/agent-avatar-video";
 import { FluidOrb } from "@/components/ui/fluid-orb";
 import { ArrowLeft, Check, CircleDot, Clock3, Download, History, LoaderCircle, MessageSquarePlus, RotateCcw, Settings2, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
 import { Button, Dropdown, Input, Popover } from "antd";
@@ -35,10 +36,44 @@ import type { ApprovalState } from "./canvas-cloud-agent-events";
 
 // hidden 为 true 时入口保持挂载但不显示：Live2D 模型加载开销大，面板开合不能卸载它，
 // 否则每次重新挂载都要重新下载模型并重建渲染上下文。
-export function AgentLauncher({ theme, statusColor, approvalPending, reducedMotion, hidden = false, onOpen }: { theme: CanvasTheme; statusColor: string; approvalPending: boolean; reducedMotion: boolean; hidden?: boolean; onOpen: () => void }) {
+export function AgentLauncher({ theme, statusColor, approvalPending, reducedMotion, status, hidden = false, onOpen }: { theme: CanvasTheme; statusColor: string; approvalPending: boolean; reducedMotion: boolean; status: string; hidden?: boolean; onOpen: () => void }) {
     const appearance = useAppearanceStore((state) => state.appearance.canvas) || DEFAULT_CANVAS_APPEARANCE;
     const appearanceResolved = useAppearanceStore((state) => state.resolved);
+    const appearanceRevision = useAppearanceStore((state) => state.appearance.revision);
     const live = appearance.avatarType === "live2d" && Boolean(appearance.live2dResourceId && appearance.live2dEntry);
+    const avatarState: AgentAvatarState = status === "running" || status === "queued" ? "running" : status === "waiting_approval" ? "waiting_approval" : status === "completed" ? "completed" : status === "failed" || status === "cancelled" || status === "rejected" ? "failed" : "idle";
+    const bundleManifestURL = appearance.avatarBundleResourceId
+        ? agentAvatarBundleFileURL(appearance.avatarBundleResourceId, "avatar.json", false, appearanceRevision)
+        : "/doll/avatar.json";
+    const [bundleManifest, setBundleManifest] = useState<AgentAvatarBundleManifest | null>(null);
+    useEffect(() => {
+        if (appearance.avatarType !== "bundle") {
+            setBundleManifest(null);
+            return;
+        }
+        const controller = new AbortController();
+        void (async () => {
+            try {
+                const response = await fetch(bundleManifestURL, { credentials: "include", signal: controller.signal });
+                if (!response.ok) throw new Error(`无法读取 Agent 动画包（HTTP ${response.status}）`);
+                const manifest: unknown = await response.json();
+                if (!isAgentAvatarBundleManifest(manifest)) throw new Error("avatar.json 格式无效");
+                setBundleManifest(manifest);
+            } catch {
+                if (!controller.signal.aborted) setBundleManifest(null);
+            }
+        })();
+        return () => controller.abort();
+    }, [appearance.avatarType, bundleManifestURL]);
+    const clip = bundleManifest ? agentAvatarClipForState(appearance, avatarState, bundleManifest) : "";
+    const clipFile = bundleManifest?.clips[clip] || "";
+    const mediaURL = appearance.avatarType === "bundle" && clipFile
+        ? appearance.avatarBundleResourceId
+            ? agentAvatarBundleFileURL(appearance.avatarBundleResourceId, clipFile, false, appearanceRevision)
+            : `/doll/${encodeURIComponent(clipFile)}`
+        : "";
+    const [mediaError, setMediaError] = useState(false);
+    useEffect(() => setMediaError(false), [mediaURL]);
     const [live2DError, setLive2DError] = useState("");
     const [viewport, setViewport] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
     useEffect(() => {
@@ -46,19 +81,22 @@ export function AgentLauncher({ theme, statusColor, approvalPending, reducedMoti
         window.addEventListener("resize", resize);
         return () => window.removeEventListener("resize", resize);
     }, []);
-    const height = live ? Math.max(40, Math.min(appearance.avatarHeight, viewport.height - 60, (viewport.width - 40) / 0.75)) : 76;
-    const width = live ? Math.round(height * 0.75) : 76;
+    const media = Boolean(mediaURL && !mediaError);
+    const aspectRatio = live ? 0.75 : bundleManifest ? bundleManifest.width / bundleManifest.height : 1;
+    const height = live || media ? Math.max(40, Math.min(appearance.avatarHeight, viewport.height - 60, (viewport.width - 40) / aspectRatio)) : 76;
+    const width = live ? Math.round(height * aspectRatio) : media ? Math.round(height * aspectRatio) : 76;
     const { position, dragging, handlers } = useAgentLauncherPosition(onOpen, width, height);
     return (
         <motion.button
             type="button"
             aria-label={`打开${appearance.agentName}`}
             title={live && live2DError ? live2DError : `${approvalPending ? "Agent 等待你的审批" : "打开 Agent 助手"} · 拖动可调整位置，聚焦后可用方向键移动`}
-            className={cn("canvas-agent-launcher fixed z-[calc(var(--z-toast)+1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/35", dragging && "is-dragging", live && "canvas-agent-launcher-live2d")}
+            className={cn("canvas-agent-launcher fixed z-[calc(var(--z-toast)+1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/35", dragging && "is-dragging", live && "canvas-agent-launcher-live2d", mediaURL && !mediaError && "canvas-agent-launcher-media")}
             style={{ ...position, width, height, color: theme.node.text, "--canvas-agent-launcher-shadow": theme.spatial.shadow, ...(hidden ? { display: "none" } : null) } as CSSProperties}
             aria-hidden={hidden || undefined}
             tabIndex={hidden ? -1 : undefined}
             data-canvas-no-zoom
+            onDragStart={(event) => event.preventDefault()}
             {...handlers}
             whileHover={reducedMotion || dragging ? undefined : { scale: 1.035 }}
             whileTap={reducedMotion || dragging ? undefined : { scale: 0.96 }}
@@ -74,6 +112,8 @@ export function AgentLauncher({ theme, statusColor, approvalPending, reducedMoti
                     onReady={() => setLive2DError("")}
                     onError={setLive2DError}
                 />
+            ) : mediaURL && !mediaError ? (
+                <AgentAvatarVideo src={mediaURL} loop={!["completed", "failed"].includes(avatarState)} onError={() => setMediaError(true)} />
             ) : appearanceResolved ? (
                 <FluidOrb size={60} color="#7164f6" />
             ) : (

@@ -1739,7 +1739,7 @@
 
 .canvas-agent-launcher-label {
     position: absolute;
-    bottom: -17px;
+    bottom: -34px;
     left: 50%;
     padding: 3px 7px;
     border: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);

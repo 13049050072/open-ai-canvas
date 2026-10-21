@@ -5,6 +5,14 @@ description: 当前项目已实现功能的手工验证清单与未确认边界
 
 # 待测试
 
+## 积分运营：冻结积分自动退回开关
+
+- 已实现：`/admin/credit-operations` 右上角新增「自动退回」开关，默认关闭；开启前二次确认。配置存于 `system_settings` 键 `billing_auto_refund`（`{"enabled": bool}`），不新增表结构；接口 `GET/PATCH /api/admin/settings/billing-auto-refund`，仅管理员可读写，修改写入管理员审计 `billing_auto_refund.update`。
+- 行为：开启后后台 worker 每分钟按「待核对队列」口径（费用待核对、运行超 40 分钟、任务已失败/取消但仍预授权）每轮最多 100 条调用既有退款路径，写退款流水并记录核对备注「系统自动退回」；开启时立即执行一轮，关闭后下一轮停止。
+- 已验证：`go test ./internal/app/`（默认关闭、非管理员不可修改）、`bun run build`。
+- [ ] 开启开关后，待核对订单在 1 分钟内变为已退款，用户可用积分恢复、冻结积分减少，积分流水出现退款记录。
+- [ ] 关闭开关后新的待核对订单保持冻结；刷新页面后开关状态保持；非管理员调用接口返回 403。
+
 ## 视频画质增强（火山 AI MediaKit 大模型版）
 
 - 已实现：官方插件 `volcengine-mediakit`（provider `volcengine-mediakit-enhance-video`，`kind: processing`，能力仍为 `video`），调用 `POST /api/v1/tools/enhance-video-generative` 与 `GET /api/v1/tasks/{task_id}`，`client_token` 取宿主幂等键。manifest provider 新增 `kind` 字段（`generation` / `processing`），目录接口返回给前端。
